@@ -28,10 +28,18 @@ const KEYS = {
 // Colors for pixel art style
 const COLORS = {
     WALL: '#2d2d2d',
+    WALL_DARK: '#1a1a1a',
+    WALL_LIGHT: '#404040',
     FLOOR: '#f0f0f0',
+    FLOOR_DARK: '#e0e0e0',
     PLAYER: '#4a90e2',
+    PLAYER_OUTLINE: '#ffffff',
     START: '#5cb85c',
-    END: '#d9534f'
+    START_GLOW: '#7dd87d',
+    END: '#d9534f',
+    END_GLOW: '#ff6b6b',
+    COMPASS_BG: 'rgba(0, 0, 0, 0.8)',
+    COMPASS_BORDER: '#ffffff'
 };
 
 // Utility functions

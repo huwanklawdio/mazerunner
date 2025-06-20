@@ -18,19 +18,19 @@
 - [x] Implement maze generation algorithm (recursive backtracking)
 - [x] Create maze rendering system
 - [x] Add collision detection for walls
-- [ ] Test maze generation and display
+- [x] Test maze generation and display
 
 ### Player System
 - [x] Create player sprite and animations
 - [x] Implement grid-based movement with arrow keys
 - [x] Add smooth movement interpolation
-- [ ] Test player movement and collision
+- [x] Test player movement and collision
 
 ### Camera & Viewport
 - [x] Implement camera following player
 - [x] Add smooth camera movement
 - [x] Handle map boundaries
-- [ ] Test viewport scrolling
+- [x] Test viewport scrolling
 
 ### Game States
 - [x] Add start screen
@@ -38,11 +38,12 @@
 - [x] Add game restart functionality
 - [x] Create simple UI elements
 
-### Polish & Assets
-- [ ] Create pixel art sprites
+### Game Enhancements
+- [x] Add visual hint showing which direction the exit is located
+- [x] Add visual polish and effects
+- [x] Create animated person character sprite with walking animation
 - [ ] Add sound effects (optional)
 - [ ] Optimize performance
-- [ ] Add visual polish and effects
 
 ## 📝 Notes
 - Grid-based movement
