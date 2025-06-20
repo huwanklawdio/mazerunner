@@ -19,6 +19,12 @@ class Game {
         this.stepCount = 0;
         this.stats = this.loadStats();
         
+        // Achievement tracking
+        this.wallCollisions = 0;
+        this.perfectStreak = this.loadStreakData().perfectStreak || 0;
+        this.winStreak = this.loadStreakData().winStreak || 0;
+        this.completedDifficulties = this.loadCompletedDifficulties();
+        
         // Game objects
         this.maze = null;
         this.player = null;
@@ -26,6 +32,8 @@ class Game {
         this.renderer = null;
         this.audio = null;
         this.miniMap = null;
+        this.achievementSystem = null;
+        this.achievementUI = null;
         
         // Input handling
         this.keys = {};
@@ -48,6 +56,10 @@ class Game {
         // Create mini-map canvas
         this.miniMapCanvas = document.createElement('canvas');
         this.miniMap = new MiniMap(this.miniMapCanvas, this.maze);
+        
+        // Initialize achievement system
+        this.achievementSystem = new AchievementSystem();
+        this.achievementUI = new AchievementUI(this.achievementSystem);
         
         // Set up input handling
         this.setupInput();
@@ -144,6 +156,34 @@ class Game {
         };
     }
     
+    loadCompletedDifficulties() {
+        const saved = localStorage.getItem('mazerunner-completed-difficulties');
+        if (saved) {
+            return JSON.parse(saved);
+        }
+        return [];
+    }
+    
+    saveCompletedDifficulties() {
+        localStorage.setItem('mazerunner-completed-difficulties', JSON.stringify(this.completedDifficulties));
+    }
+    
+    loadStreakData() {
+        const saved = localStorage.getItem('mazerunner-streaks');
+        if (saved) {
+            return JSON.parse(saved);
+        }
+        return { perfectStreak: 0, winStreak: 0 };
+    }
+    
+    saveStreakData() {
+        const streakData = {
+            perfectStreak: this.perfectStreak,
+            winStreak: this.winStreak
+        };
+        localStorage.setItem('mazerunner-streaks', JSON.stringify(streakData));
+    }
+    
     saveStats() {
         localStorage.setItem('mazerunner-stats', JSON.stringify(this.stats));
     }
@@ -187,6 +227,14 @@ class Game {
             }
         }
         
+        // Reset streak if player restarts during game
+        if (this.keyPressed['KeyR'] && this.state === 'playing') {
+            this.winStreak = 0;
+            this.perfectStreak = 0;
+            this.saveStreakData();
+            this.startNewGame();
+        }
+        
         if (this.state === 'playing') {
             let moved = false;
             let attemptedMove = false;
@@ -216,6 +264,7 @@ class Game {
                     this.updateStepsDisplay();
                 } else {
                     this.audio.playWallCollision();
+                    this.wallCollisions++;
                 }
             }
         }
@@ -250,6 +299,7 @@ class Game {
         this.startTime = Date.now();
         this.currentTime = 0;
         this.stepCount = 0;
+        this.wallCollisions = 0;
         this.updateTimerDisplay();
         this.updateStepsDisplay();
         
@@ -267,6 +317,41 @@ class Game {
         // Re-enable difficulty selector
         document.getElementById('difficulty').disabled = false;
         
+        // Track difficulty completion
+        if (!this.completedDifficulties.includes(this.currentDifficulty)) {
+            this.completedDifficulties.push(this.currentDifficulty);
+            this.saveCompletedDifficulties();
+        }
+        
+        // Update streak tracking
+        this.winStreak++;
+        if (this.wallCollisions === 0) {
+            this.perfectStreak++;
+        } else {
+            this.perfectStreak = 0;
+        }
+        
+        // Calculate exploration percentage
+        const totalTiles = this.maze.width * this.maze.height;
+        const exploredTiles = this.miniMap.explored.size;
+        const explorationPercentage = (exploredTiles / totalTiles) * 100;
+        
+        // Check for achievements
+        const gameData = {
+            completionTime: completionTime,
+            difficulty: this.currentDifficulty,
+            wallCollisions: this.wallCollisions,
+            explorationPercentage: explorationPercentage,
+            winStreak: this.winStreak,
+            perfectStreak: this.perfectStreak,
+            completedDifficulties: this.completedDifficulties
+        };
+        
+        const newAchievements = this.achievementSystem.checkAchievements(gameData);
+        if (newAchievements.length > 0) {
+            this.achievementUI.showMultipleAchievements(newAchievements);
+        }
+        
         // Update stats
         this.stats.totalGames++;
         this.stats.totalSteps += this.stepCount;
@@ -281,6 +366,7 @@ class Game {
         
         this.stats.averageTime = (this.stats.averageTime * (this.stats.totalGames - 1) + completionTime) / this.stats.totalGames;
         this.saveStats();
+        this.saveStreakData();
     }
     
     updateTimerDisplay() {
