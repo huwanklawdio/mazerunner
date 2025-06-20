@@ -11,9 +11,20 @@
         <div class="ui-overlay">
             <div class="game-info">
                 <span id="status">Press SPACE to start</span>
-                <div class="controls">
-                    <button id="mapToggle" class="control-button">📍</button>
-                    <button id="soundToggle" class="control-button">🔊</button>
+                <div class="game-controls">
+                    <div class="difficulty-selector">
+                        <label for="difficulty">Difficulty:</label>
+                        <select id="difficulty" class="difficulty-dropdown">
+                            <option value="EASY">Easy</option>
+                            <option value="MEDIUM" selected>Medium</option>
+                            <option value="HARD">Hard</option>
+                            <option value="EXPERT">Expert</option>
+                        </select>
+                    </div>
+                    <div class="controls">
+                        <button id="mapToggle" class="control-button">📍</button>
+                        <button id="soundToggle" class="control-button">🔊</button>
+                    </div>
                 </div>
             </div>
         </div>

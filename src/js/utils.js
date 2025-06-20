@@ -3,6 +3,40 @@
 const TILE_SIZE = 32;
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
+
+// Difficulty configurations
+const DIFFICULTY_LEVELS = {
+    EASY: {
+        name: 'Easy',
+        gridWidth: 20,
+        gridHeight: 15,
+        complexity: 0.3, // Lower = simpler maze
+        description: 'Wider paths, simple layout'
+    },
+    MEDIUM: {
+        name: 'Medium', 
+        gridWidth: 32,
+        gridHeight: 24,
+        complexity: 0.5, // Standard complexity
+        description: 'Standard maze difficulty'
+    },
+    HARD: {
+        name: 'Hard',
+        gridWidth: 40,
+        gridHeight: 30, 
+        complexity: 0.7, // Higher = more complex
+        description: 'Narrow paths, complex layout'
+    },
+    EXPERT: {
+        name: 'Expert',
+        gridWidth: 48,
+        gridHeight: 36,
+        complexity: 0.9, // Maximum complexity
+        description: 'Maximum challenge'
+    }
+};
+
+// Default difficulty (maintains backward compatibility)
 const MAP_WIDTH = CANVAS_WIDTH * 4;
 const MAP_HEIGHT = CANVAS_HEIGHT * 4;
 const GRID_WIDTH = MAP_WIDTH / TILE_SIZE;

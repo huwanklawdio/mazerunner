@@ -23,7 +23,7 @@ class Maze {
         }
     }
     
-    generate() {
+    generate(complexity = 0.5) {
         this.initializeGrid();
         
         // Recursive backtracking maze generation
@@ -39,8 +39,15 @@ class Maze {
             const neighbors = this.getUnvisitedNeighbors(current.x, current.y);
             
             if (neighbors.length > 0) {
-                // Choose random neighbor
-                const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+                // Choose random neighbor - complexity affects randomness
+                let next;
+                if (Math.random() < complexity) {
+                    // Higher complexity: more random selection
+                    next = neighbors[Math.floor(Math.random() * neighbors.length)];
+                } else {
+                    // Lower complexity: prefer first neighbor (creates wider paths)
+                    next = neighbors[0];
+                }
                 
                 // Remove wall between current and next
                 const wallX = current.x + (next.x - current.x) / 2;

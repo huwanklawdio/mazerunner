@@ -9,6 +9,10 @@ class Game {
         this.state = 'start'; // 'start', 'playing', 'won'
         this.lastTime = 0;
         
+        // Difficulty settings
+        this.currentDifficulty = 'MEDIUM';
+        this.difficultyConfig = DIFFICULTY_LEVELS[this.currentDifficulty];
+        
         // Game stats
         this.startTime = 0;
         this.currentTime = 0;
@@ -34,8 +38,8 @@ class Game {
         // Set up pixel-perfect rendering
         this.ctx.imageSmoothingEnabled = false;
         
-        // Initialize game objects
-        this.maze = new Maze(GRID_WIDTH, GRID_HEIGHT);
+        // Initialize game objects with current difficulty
+        this.maze = new Maze(this.difficultyConfig.gridWidth, this.difficultyConfig.gridHeight);
         this.player = new Player(1, 1); // Start position
         this.camera = new Camera(CANVAS_WIDTH, CANVAS_HEIGHT);
         this.renderer = new Renderer(this.ctx);
@@ -48,11 +52,14 @@ class Game {
         // Set up input handling
         this.setupInput();
         
-        // Set up control buttons
+        // Set up control buttons and difficulty selector
         this.setupControls();
         
         // Set up stats display
         this.setupStatsDisplay();
+        
+        // Set initial status message
+        this.status.textContent = `${this.difficultyConfig.name} - ${this.difficultyConfig.description}. Press SPACE to start`;
         
         // Start game loop
         this.gameLoop(0);
@@ -72,6 +79,16 @@ class Game {
     }
     
     setupControls() {
+        // Difficulty selector
+        const difficultySelect = document.getElementById('difficulty');
+        difficultySelect.style.pointerEvents = 'auto';
+        
+        difficultySelect.addEventListener('change', (e) => {
+            if (this.state === 'start') {
+                this.changeDifficulty(e.target.value);
+            }
+        });
+        
         // Sound toggle
         const soundToggle = document.getElementById('soundToggle');
         soundToggle.style.pointerEvents = 'auto';
@@ -204,12 +221,30 @@ class Game {
         }
     }
     
+    changeDifficulty(difficulty) {
+        this.currentDifficulty = difficulty;
+        this.difficultyConfig = DIFFICULTY_LEVELS[difficulty];
+        
+        // Recreate maze with new difficulty
+        this.maze = new Maze(this.difficultyConfig.gridWidth, this.difficultyConfig.gridHeight);
+        
+        // Recreate mini-map with new maze
+        this.miniMap = new MiniMap(this.miniMapCanvas, this.maze);
+        
+        // Update status to show difficulty
+        this.status.textContent = `${this.difficultyConfig.name} - ${this.difficultyConfig.description}. Press SPACE to start`;
+    }
+    
     startNewGame() {
-        this.maze.generate();
+        // Generate maze with difficulty-based complexity
+        this.maze.generate(this.difficultyConfig.complexity);
         this.player.reset(this.maze.startX, this.maze.startY);
         this.camera.reset();
         this.state = 'playing';
-        this.status.textContent = 'Find the exit!';
+        this.status.textContent = `${this.difficultyConfig.name} - Find the exit!`;
+        
+        // Disable difficulty selector during game
+        document.getElementById('difficulty').disabled = true;
         
         // Reset game stats
         this.startTime = Date.now();
@@ -229,16 +264,19 @@ class Game {
     completeGame() {
         const completionTime = this.currentTime;
         
+        // Re-enable difficulty selector
+        document.getElementById('difficulty').disabled = false;
+        
         // Update stats
         this.stats.totalGames++;
         this.stats.totalSteps += this.stepCount;
         
         if (completionTime < this.stats.bestTime) {
             this.stats.bestTime = completionTime;
-            this.status.textContent = `New best time! ${this.formatTime(completionTime)} - Press SPACE to play again`;
+            this.status.textContent = `${this.difficultyConfig.name} completed! New best: ${this.formatTime(completionTime)} - Press SPACE to play again`;
             document.getElementById('bestTime').textContent = this.formatTime(completionTime);
         } else {
-            this.status.textContent = `Completed in ${this.formatTime(completionTime)}! Press SPACE to play again`;
+            this.status.textContent = `${this.difficultyConfig.name} completed in ${this.formatTime(completionTime)}! Press SPACE to play again`;
         }
         
         this.stats.averageTime = (this.stats.averageTime * (this.stats.totalGames - 1) + completionTime) / this.stats.totalGames;
