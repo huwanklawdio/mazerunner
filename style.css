@@ -1,0 +1,49 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #1a1a1a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Courier New', monospace;
+    color: white;
+}
+
+.game-container {
+    position: relative;
+    border: 2px solid #333;
+    background: #000;
+}
+
+#gameCanvas {
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+.ui-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.game-info {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px 20px;
+    text-align: center;
+    font-size: 14px;
+    color: #fff;
+}
+
+#status {
+    font-weight: bold;
+}
