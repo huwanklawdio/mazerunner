@@ -45,6 +45,7 @@
 - [x] Add sound effects (optional)
 - [x] Add timer and score tracking system
 - [x] Add mini-map with exploration tracking
+- [x] Redesign mini-map to circular retro gaming radar (static, no rotation)
 - [ ] Optimize performance
 
 ## 📝 Notes
