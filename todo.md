@@ -42,7 +42,7 @@
 - [x] Add visual hint showing which direction the exit is located
 - [x] Add visual polish and effects
 - [x] Create animated person character sprite with walking animation
-- [ ] Add sound effects (optional)
+- [x] Add sound effects (optional)
 - [ ] Optimize performance
 
 ## 📝 Notes

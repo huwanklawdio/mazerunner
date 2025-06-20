@@ -14,6 +14,7 @@ class Game {
         this.player = null;
         this.camera = null;
         this.renderer = null;
+        this.audio = null;
         
         // Input handling
         this.keys = {};
@@ -31,9 +32,13 @@ class Game {
         this.player = new Player(1, 1); // Start position
         this.camera = new Camera(CANVAS_WIDTH, CANVAS_HEIGHT);
         this.renderer = new Renderer(this.ctx);
+        this.audio = new AudioSystem();
         
         // Set up input handling
         this.setupInput();
+        
+        // Set up sound toggle button
+        this.setupSoundToggle();
         
         // Start game loop
         this.gameLoop(0);
@@ -52,6 +57,17 @@ class Game {
         });
     }
     
+    setupSoundToggle() {
+        const soundToggle = document.getElementById('soundToggle');
+        soundToggle.style.pointerEvents = 'auto'; // Enable clicking
+        
+        soundToggle.addEventListener('click', () => {
+            const enabled = this.audio.toggleSound();
+            soundToggle.textContent = enabled ? '🔊' : '🔇';
+            soundToggle.classList.toggle('disabled', !enabled);
+        });
+    }
+    
     update(deltaTime) {
         // Handle input
         this.handleInput();
@@ -65,6 +81,7 @@ class Game {
             if (this.player.x === this.maze.endX && this.player.y === this.maze.endY) {
                 this.state = 'won';
                 this.status.textContent = 'You won! Press SPACE to play again';
+                this.audio.playVictory();
             }
         }
         
@@ -81,15 +98,32 @@ class Game {
         
         if (this.state === 'playing') {
             let moved = false;
+            let attemptedMove = false;
             
             if (this.keyPressed['ArrowUp']) {
+                attemptedMove = true;
                 moved = this.player.move(0, -1, this.maze);
             } else if (this.keyPressed['ArrowDown']) {
+                attemptedMove = true;
                 moved = this.player.move(0, 1, this.maze);
             } else if (this.keyPressed['ArrowLeft']) {
+                attemptedMove = true;
                 moved = this.player.move(-1, 0, this.maze);
             } else if (this.keyPressed['ArrowRight']) {
+                attemptedMove = true;
                 moved = this.player.move(1, 0, this.maze);
+            }
+            
+            // Play sound effects
+            if (attemptedMove) {
+                // Resume audio context on first user interaction
+                this.audio.resume();
+                
+                if (moved) {
+                    this.audio.playFootstep();
+                } else {
+                    this.audio.playWallCollision();
+                }
             }
         }
     }
@@ -100,6 +134,10 @@ class Game {
         this.camera.reset();
         this.state = 'playing';
         this.status.textContent = 'Find the exit!';
+        
+        // Play game start sound
+        this.audio.resume();
+        this.audio.playGameStart();
     }
     
     render() {

@@ -42,8 +42,32 @@ body {
     text-align: center;
     font-size: 14px;
     color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 #status {
     font-weight: bold;
+    flex-grow: 1;
+}
+
+.sound-toggle {
+    background: none;
+    border: 1px solid #fff;
+    color: #fff;
+    padding: 5px 10px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 3px;
+    margin-left: 10px;
+}
+
+.sound-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.sound-toggle.disabled {
+    opacity: 0.5;
+    text-decoration: line-through;
 }
