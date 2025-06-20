@@ -9,12 +9,19 @@ class Game {
         this.state = 'start'; // 'start', 'playing', 'won'
         this.lastTime = 0;
         
+        // Game stats
+        this.startTime = 0;
+        this.currentTime = 0;
+        this.stepCount = 0;
+        this.stats = this.loadStats();
+        
         // Game objects
         this.maze = null;
         this.player = null;
         this.camera = null;
         this.renderer = null;
         this.audio = null;
+        this.miniMap = null;
         
         // Input handling
         this.keys = {};
@@ -34,11 +41,18 @@ class Game {
         this.renderer = new Renderer(this.ctx);
         this.audio = new AudioSystem();
         
+        // Create mini-map canvas
+        this.miniMapCanvas = document.createElement('canvas');
+        this.miniMap = new MiniMap(this.miniMapCanvas, this.maze);
+        
         // Set up input handling
         this.setupInput();
         
-        // Set up sound toggle button
-        this.setupSoundToggle();
+        // Set up control buttons
+        this.setupControls();
+        
+        // Set up stats display
+        this.setupStatsDisplay();
         
         // Start game loop
         this.gameLoop(0);
@@ -57,15 +71,71 @@ class Game {
         });
     }
     
-    setupSoundToggle() {
+    setupControls() {
+        // Sound toggle
         const soundToggle = document.getElementById('soundToggle');
-        soundToggle.style.pointerEvents = 'auto'; // Enable clicking
+        soundToggle.style.pointerEvents = 'auto';
         
         soundToggle.addEventListener('click', () => {
             const enabled = this.audio.toggleSound();
             soundToggle.textContent = enabled ? '🔊' : '🔇';
             soundToggle.classList.toggle('disabled', !enabled);
         });
+        
+        // Mini-map toggle
+        const mapToggle = document.getElementById('mapToggle');
+        mapToggle.style.pointerEvents = 'auto';
+        
+        mapToggle.addEventListener('click', () => {
+            const visible = this.miniMap.toggle();
+            mapToggle.classList.toggle('disabled', !visible);
+            mapToggle.title = visible ? 'Hide Mini-map' : 'Show Mini-map';
+        });
+    }
+    
+    setupStatsDisplay() {
+        // Create stats display elements
+        const gameInfo = document.querySelector('.game-info');
+        
+        // Timer display
+        const timerDiv = document.createElement('div');
+        timerDiv.className = 'timer-display';
+        timerDiv.innerHTML = '<span id="timer">00:00</span>';
+        
+        // Stats display
+        const statsDiv = document.createElement('div');
+        statsDiv.className = 'stats-display';
+        statsDiv.innerHTML = `
+            <div class="stat-item">Steps: <span id="steps">0</span></div>
+            <div class="stat-item">Best: <span id="bestTime">${this.formatTime(this.stats.bestTime)}</span></div>
+        `;
+        
+        gameInfo.appendChild(timerDiv);
+        gameInfo.appendChild(statsDiv);
+    }
+    
+    loadStats() {
+        const saved = localStorage.getItem('mazerunner-stats');
+        if (saved) {
+            return JSON.parse(saved);
+        }
+        return {
+            bestTime: Infinity,
+            totalGames: 0,
+            totalSteps: 0,
+            averageTime: 0
+        };
+    }
+    
+    saveStats() {
+        localStorage.setItem('mazerunner-stats', JSON.stringify(this.stats));
+    }
+    
+    formatTime(seconds) {
+        if (seconds === Infinity) return '--:--';
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
     
     update(deltaTime) {
@@ -77,10 +147,14 @@ class Game {
             this.player.update(deltaTime, this.maze);
             this.camera.update(this.player.x * TILE_SIZE, this.player.y * TILE_SIZE);
             
+            // Update timer
+            this.currentTime = (Date.now() - this.startTime) / 1000;
+            this.updateTimerDisplay();
+            
             // Check win condition
             if (this.player.x === this.maze.endX && this.player.y === this.maze.endY) {
                 this.state = 'won';
-                this.status.textContent = 'You won! Press SPACE to play again';
+                this.completeGame();
                 this.audio.playVictory();
             }
         }
@@ -121,6 +195,8 @@ class Game {
                 
                 if (moved) {
                     this.audio.playFootstep();
+                    this.stepCount++;
+                    this.updateStepsDisplay();
                 } else {
                     this.audio.playWallCollision();
                 }
@@ -135,9 +211,52 @@ class Game {
         this.state = 'playing';
         this.status.textContent = 'Find the exit!';
         
+        // Reset game stats
+        this.startTime = Date.now();
+        this.currentTime = 0;
+        this.stepCount = 0;
+        this.updateTimerDisplay();
+        this.updateStepsDisplay();
+        
+        // Reset mini-map
+        this.miniMap.reset();
+        
         // Play game start sound
         this.audio.resume();
         this.audio.playGameStart();
+    }
+    
+    completeGame() {
+        const completionTime = this.currentTime;
+        
+        // Update stats
+        this.stats.totalGames++;
+        this.stats.totalSteps += this.stepCount;
+        
+        if (completionTime < this.stats.bestTime) {
+            this.stats.bestTime = completionTime;
+            this.status.textContent = `New best time! ${this.formatTime(completionTime)} - Press SPACE to play again`;
+            document.getElementById('bestTime').textContent = this.formatTime(completionTime);
+        } else {
+            this.status.textContent = `Completed in ${this.formatTime(completionTime)}! Press SPACE to play again`;
+        }
+        
+        this.stats.averageTime = (this.stats.averageTime * (this.stats.totalGames - 1) + completionTime) / this.stats.totalGames;
+        this.saveStats();
+    }
+    
+    updateTimerDisplay() {
+        const timerElement = document.getElementById('timer');
+        if (timerElement) {
+            timerElement.textContent = this.formatTime(this.currentTime);
+        }
+    }
+    
+    updateStepsDisplay() {
+        const stepsElement = document.getElementById('steps');
+        if (stepsElement) {
+            stepsElement.textContent = this.stepCount.toString();
+        }
     }
     
     render() {
@@ -147,6 +266,7 @@ class Game {
         
         if (this.state !== 'start') {
             this.renderer.render(this.maze, this.player, this.camera);
+            this.miniMap.render(this.player);
         } else {
             // Show start screen
             this.ctx.fillStyle = '#fff';

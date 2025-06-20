@@ -43,6 +43,8 @@
 - [x] Add visual polish and effects
 - [x] Create animated person character sprite with walking animation
 - [x] Add sound effects (optional)
+- [x] Add timer and score tracking system
+- [x] Add mini-map with exploration tracking
 - [ ] Optimize performance
 
 ## 📝 Notes

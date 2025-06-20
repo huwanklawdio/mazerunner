@@ -11,7 +11,10 @@
         <div class="ui-overlay">
             <div class="game-info">
                 <span id="status">Press SPACE to start</span>
-                <button id="soundToggle" class="sound-toggle">🔊</button>
+                <div class="controls">
+                    <button id="mapToggle" class="control-button">📍</button>
+                    <button id="soundToggle" class="control-button">🔊</button>
+                </div>
             </div>
         </div>
         <canvas id="gameCanvas" width="800" height="600"></canvas>
@@ -23,6 +26,7 @@
     <script src="src/js/player.js"></script>
     <script src="src/js/camera.js"></script>
     <script src="src/js/renderer.js"></script>
+    <script src="src/js/minimap.js"></script>
     <script src="src/js/game.js"></script>
 </body>
 </html>

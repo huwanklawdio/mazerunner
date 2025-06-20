@@ -45,6 +45,8 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 #status {
@@ -52,7 +54,12 @@ body {
     flex-grow: 1;
 }
 
-.sound-toggle {
+.controls {
+    display: flex;
+    gap: 5px;
+}
+
+.control-button {
     background: none;
     border: 1px solid #fff;
     color: #fff;
@@ -60,14 +67,34 @@ body {
     font-size: 16px;
     cursor: pointer;
     border-radius: 3px;
-    margin-left: 10px;
 }
 
-.sound-toggle:hover {
+.control-button:hover {
     background: rgba(255, 255, 255, 0.1);
 }
 
-.sound-toggle.disabled {
+.control-button.disabled {
     opacity: 0.5;
     text-decoration: line-through;
+}
+
+.timer-display {
+    font-size: 16px;
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+.stats-display {
+    display: flex;
+    gap: 15px;
+    font-size: 12px;
+}
+
+.stat-item {
+    color: #ccc;
+}
+
+.stat-item span {
+    color: #fff;
+    font-weight: bold;
 }
