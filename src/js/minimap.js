@@ -17,6 +17,7 @@ class MiniMap {
         this.targetRotation = 0;
         this.rotationSpeed = 0.1; // Smooth rotation interpolation
         this.glowPhase = 0; // For pulsing glow animation
+        this.playerOffset = 25; // Player icon offset from center
         
         // Retro colors
         this.colors = {
@@ -107,6 +108,9 @@ class MiniMap {
     }
     
     render(player) {
+        // Update rotation based on player facing direction
+        this.updateRotation(player);
+        
         // Update glow animation (no rotation)
         this.glowPhase += 0.05;
         
@@ -178,38 +182,32 @@ class MiniMap {
         const centerX = this.radius;
         const centerY = this.radius;
         
-        // Draw explored maze tiles (no rotation)
+        // Calculate the view center in game coordinates, offset in front of the player
+        const viewCenterX = player.x + (this.playerOffset / this.scale) * Math.cos(this.currentRotation);
+        const viewCenterY = player.y + (this.playerOffset / this.scale) * Math.sin(this.currentRotation);
+        
+        // Draw explored maze tiles
         for (let y = 0; y < this.maze.height; y++) {
             for (let x = 0; x < this.maze.width; x++) {
                 const key = `${x},${y}`;
                 
                 if (this.explored.has(key)) {
-                    // Calculate relative position to player (no rotation)
-                    const relX = (x - player.x) * this.scale;
-                    const relY = (y - player.y) * this.scale;
+                    // Position relative to the new view center
+                    const relX = (x - viewCenterX) * this.scale;
+                    const relY = (y - viewCenterY) * this.scale;
                     
                     const screenX = centerX + relX;
                     const screenY = centerY + relY;
                     
-                    // Check if point is within visible circle
-                    const distFromCenter = Math.sqrt(
-                        Math.pow(screenX - centerX, 2) + 
-                        Math.pow(screenY - centerY, 2)
-                    );
+                    const distFromCenter = Math.sqrt(Math.pow(screenX - centerX, 2) + Math.pow(screenY - centerY, 2));
                     
                     if (distFromCenter < this.radius - 5) {
                         const pixelSize = Math.max(2, this.scale);
                         
-                        if (this.maze.isWall(x, y)) {
-                            this.ctx.fillStyle = this.colors.wall;
-                        } else {
-                            this.ctx.fillStyle = this.colors.floor;
-                        }
-                        
-                        // Draw pixelated tiles
+                        this.ctx.fillStyle = this.maze.isWall(x, y) ? this.colors.wall : this.colors.floor;
                         this.ctx.fillRect(
-                            Math.floor(screenX - pixelSize/2),
-                            Math.floor(screenY - pixelSize/2),
+                            Math.floor(screenX - pixelSize / 2),
+                            Math.floor(screenY - pixelSize / 2),
                             pixelSize,
                             pixelSize
                         );
@@ -220,55 +218,49 @@ class MiniMap {
         
         // Draw start position (if explored)
         if (this.explored.has(`${this.maze.startX},${this.maze.startY}`)) {
-            const relX = (this.maze.startX - player.x) * this.scale;
-            const relY = (this.maze.startY - player.y) * this.scale;
-            
+            const relX = (this.maze.startX - viewCenterX) * this.scale;
+            const relY = (this.maze.startY - viewCenterY) * this.scale;
             const screenX = centerX + relX;
             const screenY = centerY + relY;
             
-            const distFromCenter = Math.sqrt(
-                Math.pow(screenX - centerX, 2) + 
-                Math.pow(screenY - centerY, 2)
-            );
-            
-            if (distFromCenter < this.radius - 5) {
+            if (Math.sqrt(Math.pow(screenX - centerX, 2) + Math.pow(screenY - centerY, 2)) < this.radius - 5) {
                 this.ctx.fillStyle = this.colors.start;
                 const size = Math.max(3, this.scale);
-                this.ctx.fillRect(screenX - size/2, screenY - size/2, size, size);
+                this.ctx.fillRect(screenX - size / 2, screenY - size / 2, size, size);
             }
         }
         
         // Draw end position (if explored)
         if (this.explored.has(`${this.maze.endX},${this.maze.endY}`)) {
-            const relX = (this.maze.endX - player.x) * this.scale;
-            const relY = (this.maze.endY - player.y) * this.scale;
-            
+            const relX = (this.maze.endX - viewCenterX) * this.scale;
+            const relY = (this.maze.endY - viewCenterY) * this.scale;
             const screenX = centerX + relX;
             const screenY = centerY + relY;
             
-            const distFromCenter = Math.sqrt(
-                Math.pow(screenX - centerX, 2) + 
-                Math.pow(screenY - centerY, 2)
-            );
-            
-            if (distFromCenter < this.radius - 5) {
+            if (Math.sqrt(Math.pow(screenX - centerX, 2) + Math.pow(screenY - centerY, 2)) < this.radius - 5) {
                 this.ctx.fillStyle = this.colors.end;
                 const size = Math.max(4, this.scale);
-                this.ctx.fillRect(screenX - size/2, screenY - size/2, size, size);
+                this.ctx.fillRect(screenX - size / 2, screenY - size / 2, size, size);
             }
         }
         
-        // Draw player at center (always visible)
+        // Draw player icon (triangle) at the offset position
+        this.ctx.save();
+        const playerScreenX = centerX - this.playerOffset * Math.cos(this.currentRotation);
+        const playerScreenY = centerY - this.playerOffset * Math.sin(this.currentRotation);
+        
+        this.ctx.translate(playerScreenX, playerScreenY);
+        this.ctx.rotate(this.currentRotation);
+        
         this.ctx.fillStyle = this.colors.player;
         this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, 4, 0, Math.PI * 2);
+        this.ctx.moveTo(5, 0);
+        this.ctx.lineTo(-3, -4);
+        this.ctx.lineTo(-3, 4);
+        this.ctx.closePath();
         this.ctx.fill();
         
-        // Player center dot
-        this.ctx.fillStyle = this.colors.playerCenter;
-        this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, 2, 0, Math.PI * 2);
-        this.ctx.fill();
+        this.ctx.restore();
     }
     
     drawScanlines() {
