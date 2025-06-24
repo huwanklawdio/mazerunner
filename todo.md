@@ -73,10 +73,22 @@
   - [x] Responsive design for different screen sizes
 - [x] Add comprehensive achievement system with 16 unique badges
 - [x] Implement difficulty levels with different maze sizes and complexity
+- [x] Implement environmental puzzles system
+  - [x] Pressure plates that temporarily open walls for strategic shortcuts
+  - [x] Lever mechanisms to toggle maze passages
+  - [x] Visual feedback with particle effects and glowing indicators
+  - [x] Timer-based temporary wall removal with warning effects
+- [x] Implement 5-frame sprite animation system for player character
+  - [x] Async sprite loading for step-1.png through step-5.png
+  - [x] Transparent PNG support with proper layering
+  - [x] Smooth walk cycle animation with sprite frame cycling
+  - [x] Horizontal sprite flipping for directional movement
+  - [x] Fallback to pixel art rendering if sprites fail to load
 - [ ] Add parchment-style notifications for medieval theming
 - [ ] Implement power-up system (speed boost, torch vision, etc.)
 - [ ] Add multi-level progression system
 - [ ] Optimize performance for larger mazes
+- [ ] Create mirror puzzles with light beam reflection mechanics
 
 ## 📝 Notes
 - Grid-based movement

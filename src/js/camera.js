@@ -26,12 +26,23 @@ class Camera {
         this.targetX = clamp(this.targetX, 0, MAP_WIDTH - this.viewWidth);
         this.targetY = clamp(this.targetY, 0, MAP_HEIGHT - this.viewHeight);
         
-        // Smooth camera movement
+        // Smooth camera movement with deadzone to prevent micro-movements
         const dx = this.targetX - this.x;
         const dy = this.targetY - this.y;
         
-        this.x += dx * this.followSpeed * 0.016; // Assuming 60 FPS
-        this.y += dy * this.followSpeed * 0.016;
+        // Only move if difference is significant enough
+        const threshold = 0.5;
+        if (Math.abs(dx) > threshold) {
+            this.x += dx * this.followSpeed * 0.016; // Assuming 60 FPS
+        } else {
+            this.x = this.targetX; // Snap to target if very close
+        }
+        
+        if (Math.abs(dy) > threshold) {
+            this.y += dy * this.followSpeed * 0.016;
+        } else {
+            this.y = this.targetY; // Snap to target if very close
+        }
     }
     
     worldToScreen(worldX, worldY) {

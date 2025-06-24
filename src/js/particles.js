@@ -1,7 +1,11 @@
 // Particle system for visual effects
 
 class Particle {
-    constructor(x, y, vx, vy, life, color, size) {
+    constructor(x = 0, y = 0, vx = 0, vy = 0, life = 1000, color = '#fff', size = 1) {
+        this.init(x, y, vx, vy, life, color, size);
+    }
+    
+    init(x, y, vx, vy, life, color, size) {
         this.x = x;
         this.y = y;
         this.vx = vx; // velocity x
@@ -13,9 +17,25 @@ class Particle {
         this.gravity = 0;
         this.friction = 0.98;
         this.alpha = 1;
+        this.active = true;
+    }
+    
+    reset() {
+        this.active = false;
+        this.x = 0;
+        this.y = 0;
+        this.vx = 0;
+        this.vy = 0;
+        this.life = 0;
+        this.maxLife = 0;
+        this.gravity = 0;
+        this.friction = 0.98;
+        this.alpha = 1;
     }
     
     update(deltaTime) {
+        if (!this.active) return false;
+        
         // Update position
         this.x += this.vx * (deltaTime / 16);
         this.y += this.vy * (deltaTime / 16);
@@ -29,10 +49,17 @@ class Particle {
         this.life -= deltaTime;
         this.alpha = Math.max(0, this.life / this.maxLife);
         
-        return this.life > 0;
+        if (this.life <= 0) {
+            this.active = false;
+            return false;
+        }
+        
+        return true;
     }
     
     render(ctx, camera) {
+        if (!this.active) return;
+        
         const screenPos = camera.worldToScreen(this.x, this.y);
         
         ctx.save();
@@ -51,12 +78,51 @@ class Particle {
 class ParticleSystem {
     constructor() {
         this.particles = [];
+        this.pool = [];
+        this.maxParticles = 500; // Limit total particles for performance
+        this.maxPoolSize = 200;  // Limit pool size to prevent memory bloat
+    }
+    
+    getParticle() {
+        if (this.pool.length > 0) {
+            return this.pool.pop();
+        }
+        return new Particle();
+    }
+    
+    releaseParticle(particle) {
+        if (this.pool.length < this.maxPoolSize) {
+            particle.reset();
+            this.pool.push(particle);
+        }
+    }
+    
+    createParticle(x, y, vx, vy, life, color, size) {
+        // Enforce particle limit for performance
+        if (this.particles.length >= this.maxParticles) {
+            return null;
+        }
+        
+        const particle = this.getParticle();
+        particle.init(x, y, vx, vy, life, color, size);
+        this.particles.push(particle);
+        return particle;
+    }
+    
+    // Check if we can create more particles (for batch operations)
+    canCreateParticles(count = 1) {
+        return this.particles.length + count <= this.maxParticles;
     }
     
     // Wall collision particles - stone debris
     createWallCollision(x, y, direction) {
         const particleCount = 8;
         const baseSpeed = 2;
+        
+        // Check if we can create particles before starting
+        if (!this.canCreateParticles(particleCount)) {
+            return; // Skip creation if would exceed limit
+        }
         
         for (let i = 0; i < particleCount; i++) {
             const angle = (Math.PI / 4) * i + Math.random() * (Math.PI / 8);
@@ -71,7 +137,7 @@ class ParticleSystem {
             const vx = Math.cos(finalAngle) * speed;
             const vy = Math.sin(finalAngle) * speed;
             
-            const particle = new Particle(
+            const particle = this.createParticle(
                 x + (Math.random() - 0.5) * 10,
                 y + (Math.random() - 0.5) * 10,
                 vx,
@@ -81,10 +147,10 @@ class ParticleSystem {
                 1 + Math.random() * 1.5 // Small stone debris
             );
             
-            particle.gravity = 0.2;
-            particle.friction = 0.95;
-            
-            this.particles.push(particle);
+            if (particle) {
+                particle.gravity = 0.2;
+                particle.friction = 0.95;
+            }
         }
     }
     
@@ -92,11 +158,16 @@ class ParticleSystem {
     createVictoryEffect(x, y) {
         const particleCount = 50;
         
+        // Check if we can create particles before starting
+        if (!this.canCreateParticles(particleCount)) {
+            return; // Skip creation if would exceed limit
+        }
+        
         for (let i = 0; i < particleCount; i++) {
             const angle = (Math.PI * 2 / particleCount) * i + Math.random() * 0.2;
             const speed = 2 + Math.random() * 4;
             
-            const particle = new Particle(
+            const particle = this.createParticle(
                 x,
                 y,
                 Math.cos(angle) * speed,
@@ -106,10 +177,10 @@ class ParticleSystem {
                 2 + Math.random() * 3
             );
             
-            particle.gravity = -0.1; // Float upward
-            particle.friction = 0.98;
-            
-            this.particles.push(particle);
+            if (particle) {
+                particle.gravity = -0.1; // Float upward
+                particle.friction = 0.98;
+            }
         }
     }
     
@@ -118,9 +189,14 @@ class ParticleSystem {
         // Create 2-3 particles per frame for continuous effect
         const particleCount = 2 + Math.floor(Math.random() * 2);
         
+        // Check if we can create particles before starting
+        if (!this.canCreateParticles(particleCount)) {
+            return; // Skip creation if would exceed limit
+        }
+        
         for (let i = 0; i < particleCount; i++) {
             const offsetX = (Math.random() - 0.5) * 8;
-            const particle = new Particle(
+            const particle = this.createParticle(
                 x + offsetX,
                 y,
                 (Math.random() - 0.5) * 0.5,
@@ -130,10 +206,10 @@ class ParticleSystem {
                 3 + Math.random() * 2
             );
             
-            particle.gravity = -0.05; // Slight upward force
-            particle.friction = 0.99;
-            
-            this.particles.push(particle);
+            if (particle) {
+                particle.gravity = -0.05; // Slight upward force
+                particle.friction = 0.99;
+            }
         }
     }
     
@@ -141,6 +217,11 @@ class ParticleSystem {
     createTreasureCollection(x, y, treasureType) {
         const particleCount = treasureType === 'chest' ? 20 : (treasureType === 'gem' ? 15 : 10);
         let color = COLORS.TREASURE_GOLD;
+        
+        // Check if we can create particles before starting
+        if (!this.canCreateParticles(particleCount)) {
+            return; // Skip creation if would exceed limit
+        }
         
         // Set color based on treasure type
         if (treasureType === 'gem') {
@@ -154,7 +235,7 @@ class ParticleSystem {
             const angle = (Math.PI * 2 / particleCount) * i + Math.random() * 0.5;
             const speed = 1 + Math.random() * 3;
             
-            const particle = new Particle(
+            const particle = this.createParticle(
                 x + (Math.random() - 0.5) * 8,
                 y + (Math.random() - 0.5) * 8,
                 Math.cos(angle) * speed,
@@ -164,10 +245,10 @@ class ParticleSystem {
                 2 + Math.random() * 3
             );
             
-            particle.gravity = -0.05; // Float upward
-            particle.friction = 0.98;
-            
-            this.particles.push(particle);
+            if (particle) {
+                particle.gravity = -0.05; // Float upward
+                particle.friction = 0.98;
+            }
         }
     }
     
@@ -182,11 +263,16 @@ class ParticleSystem {
         };
         const color = colors[keyColor] || COLORS.KEY_YELLOW;
         
+        // Check if we can create particles before starting
+        if (!this.canCreateParticles(particleCount)) {
+            return; // Skip creation if would exceed limit
+        }
+        
         for (let i = 0; i < particleCount; i++) {
             const angle = (Math.PI * 2 / particleCount) * i + Math.random() * 0.3;
             const speed = 1.5 + Math.random() * 2;
             
-            const particle = new Particle(
+            const particle = this.createParticle(
                 x + (Math.random() - 0.5) * 6,
                 y + (Math.random() - 0.5) * 6,
                 Math.cos(angle) * speed,
@@ -196,16 +282,24 @@ class ParticleSystem {
                 2 + Math.random() * 2
             );
             
-            particle.gravity = -0.02; // Float upward gently
-            particle.friction = 0.98;
-            
-            this.particles.push(particle);
+            if (particle) {
+                particle.gravity = -0.02; // Float upward gently
+                particle.friction = 0.98;
+            }
         }
     }
     
     // Door unlock particles
     createDoorUnlock(x, y, doorColor) {
         const particleCount = 15;
+        const sparkleCount = 8;
+        const totalParticles = particleCount + sparkleCount;
+        
+        // Check if we can create particles before starting
+        if (!this.canCreateParticles(totalParticles)) {
+            return; // Skip creation if would exceed limit
+        }
+        
         const colors = {
             'red': COLORS.DOOR_RED,
             'blue': COLORS.DOOR_BLUE,
@@ -218,7 +312,7 @@ class ParticleSystem {
             const angle = (Math.PI * 2 / particleCount) * i + Math.random() * 0.4;
             const speed = 2 + Math.random() * 3;
             
-            const particle = new Particle(
+            const particle = this.createParticle(
                 x + (Math.random() - 0.5) * 16,
                 y + (Math.random() - 0.5) * 16,
                 Math.cos(angle) * speed,
@@ -228,18 +322,18 @@ class ParticleSystem {
                 3 + Math.random() * 3
             );
             
-            particle.gravity = 0.1; // Fall down
-            particle.friction = 0.95;
-            
-            this.particles.push(particle);
+            if (particle) {
+                particle.gravity = 0.1; // Fall down
+                particle.friction = 0.95;
+            }
         }
         
         // Add some sparkle particles
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < sparkleCount; i++) {
             const angle = Math.random() * Math.PI * 2;
             const speed = 1 + Math.random() * 2;
             
-            const particle = new Particle(
+            const particle = this.createParticle(
                 x,
                 y,
                 Math.cos(angle) * speed,
@@ -249,19 +343,24 @@ class ParticleSystem {
                 1 + Math.random() * 2
             );
             
-            particle.gravity = 0;
-            particle.friction = 0.99;
-            
-            this.particles.push(particle);
+            if (particle) {
+                particle.gravity = 0;
+                particle.friction = 0.99;
+            }
         }
     }
     
     // Portal effect for start/end positions
     createPortalEffect(x, y, color) {
+        // Check if we can create particles before starting
+        if (!this.canCreateParticles(1)) {
+            return; // Skip creation if would exceed limit
+        }
+        
         const angle = Math.random() * Math.PI * 2;
         const radius = 15 + Math.random() * 10;
         
-        const particle = new Particle(
+        const particle = this.createParticle(
             x + Math.cos(angle) * radius,
             y + Math.sin(angle) * radius,
             -Math.cos(angle) * 0.5,
@@ -271,15 +370,20 @@ class ParticleSystem {
             2 + Math.random() * 2
         );
         
-        particle.gravity = 0;
-        particle.friction = 0.98;
-        
-        this.particles.push(particle);
+        if (particle) {
+            particle.gravity = 0;
+            particle.friction = 0.98;
+        }
     }
     
     // Footstep dust (enhance existing effect)
     createFootstepDust(x, y, direction) {
         const particleCount = 3;
+        
+        // Check if we can create particles before starting
+        if (!this.canCreateParticles(particleCount)) {
+            return; // Skip creation if would exceed limit
+        }
         
         for (let i = 0; i < particleCount; i++) {
             let vx = (Math.random() - 0.5) * 1;
@@ -291,7 +395,7 @@ class ParticleSystem {
             else if (direction === 'up') vy += 1;
             else if (direction === 'down') vy -= 1;
             
-            const particle = new Particle(
+            const particle = this.createParticle(
                 x + (Math.random() - 0.5) * 10,
                 y + 5,
                 vx,
@@ -301,10 +405,10 @@ class ParticleSystem {
                 2 + Math.random() * 2
             );
             
-            particle.gravity = 0.1;
-            particle.friction = 0.95;
-            
-            this.particles.push(particle);
+            if (particle) {
+                particle.gravity = 0.1;
+                particle.friction = 0.95;
+            }
         }
     }
     
@@ -315,14 +419,28 @@ class ParticleSystem {
     }
     
     update(deltaTime) {
-        // Update all particles and remove dead ones
-        this.particles = this.particles.filter(particle => particle.update(deltaTime));
+        // Update all particles and remove dead ones using object pooling
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const particle = this.particles[i];
+            if (!particle.update(deltaTime)) {
+                // Remove dead particle and return to pool
+                this.particles.splice(i, 1);
+                this.releaseParticle(particle);
+            }
+        }
     }
     
     createWallOpen(x, y) {
         // Magical wall opening effect - cyan sparkles
-        for (let i = 0; i < 15; i++) {
-            const angle = (Math.PI * 2 * i) / 15;
+        const particleCount = 15;
+        
+        // Check if we can create particles before starting
+        if (!this.canCreateParticles(particleCount)) {
+            return; // Skip creation if would exceed limit
+        }
+        
+        for (let i = 0; i < particleCount; i++) {
+            const angle = (Math.PI * 2 * i) / particleCount;
             const speed = 2 + Math.random() * 3;
             const vx = Math.cos(angle) * speed;
             const vy = Math.sin(angle) * speed;
@@ -330,20 +448,27 @@ class ParticleSystem {
             const colors = ['#00ffff', '#40e0d0', '#00ced1', '#5f9ea0'];
             const color = colors[Math.floor(Math.random() * colors.length)];
             
-            this.particles.push(new Particle(
+            this.createParticle(
                 x + (Math.random() - 0.5) * TILE_SIZE,
                 y + (Math.random() - 0.5) * TILE_SIZE,
                 vx, vy,
                 800 + Math.random() * 400, // 0.8-1.2 seconds
                 color,
                 2 + Math.random() * 2
-            ));
+            );
         }
     }
     
     createWallClose(x, y) {
         // Warning effect when wall is about to close - red sparks
-        for (let i = 0; i < 10; i++) {
+        const particleCount = 10;
+        
+        // Check if we can create particles before starting
+        if (!this.canCreateParticles(particleCount)) {
+            return; // Skip creation if would exceed limit
+        }
+        
+        for (let i = 0; i < particleCount; i++) {
             const angle = Math.random() * Math.PI * 2;
             const speed = 1 + Math.random() * 2;
             const vx = Math.cos(angle) * speed;
@@ -352,14 +477,14 @@ class ParticleSystem {
             const colors = ['#ff4444', '#ff6666', '#ffaaaa'];
             const color = colors[Math.floor(Math.random() * colors.length)];
             
-            this.particles.push(new Particle(
+            this.createParticle(
                 x + (Math.random() - 0.5) * TILE_SIZE,
                 y + (Math.random() - 0.5) * TILE_SIZE,
                 vx, vy,
                 600 + Math.random() * 200, // 0.6-0.8 seconds
                 color,
                 1 + Math.random() * 1.5
-            ));
+            );
         }
     }
     

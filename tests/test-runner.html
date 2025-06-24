@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maze Runner Performance Test Suite</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            margin: 20px;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #007ACC;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .test-controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .test-button {
+            background: #007ACC;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: background 0.3s;
+        }
+        
+        .test-button:hover {
+            background: #005a9e;
+        }
+        
+        .test-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .console-output {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        
+        .status {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 18px;
+        }
+        
+        .status.running {
+            color: #ffa500;
+        }
+        
+        .status.passed {
+            color: #28a745;
+        }
+        
+        .status.failed {
+            color: #dc3545;
+        }
+        
+        .info-panel {
+            background: #262626;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-progress {
+            background: #333;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .test-progress-bar {
+            background: linear-gradient(90deg, #007ACC, #00d4aa);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧪 Maze Runner Performance Test Suite</h1>
+        <p>Validation tests for performance optimizations</p>
+    </div>
+    
+    <div class="info-panel">
+        <h3>📋 Test Coverage</h3>
+        <ul>
+            <li>✅ Spatial Hashing Accuracy (Hash maps vs linear search)</li>
+            <li>✅ Particle Object Pooling (Memory management)</li>
+            <li>✅ Adaptive Rendering Consistency (Visual accuracy)</li>
+            <li>✅ Game Mechanics Integration (All difficulties)</li>
+            <li>✅ Collection System Validation (Treasures, keys, items)</li>
+            <li>✅ Environmental Puzzles (Pressure plates, levers)</li>
+            <li>✅ Performance Regression (FPS thresholds)</li>
+            <li>✅ Memory Stability (Long-term usage)</li>
+        </ul>
+    </div>
+    
+    <div class="test-controls">
+        <button id="runCriticalTests" class="test-button" style="background: #dc3545;">🚨 Critical Tests (Run First)</button>
+        <button id="runAllTests" class="test-button">🚀 Run All Tests</button>
+        <button id="runSpatialTests" class="test-button">🔍 Spatial Hashing Only</button>
+        <button id="runParticleTests" class="test-button">🎆 Particle System Only</button>
+        <button id="runPerformanceTests" class="test-button">⚡ Performance Only</button>
+        <button id="clearConsole" class="test-button" style="background: #666;">🧹 Clear Console</button>
+    </div>
+    
+    <div class="status" id="testStatus">Ready to run tests</div>
+    
+    <div class="test-progress">
+        <div class="test-progress-bar" id="progressBar"></div>
+    </div>
+    
+    <div class="console-output" id="consoleOutput">
+Maze Runner Performance Test Suite Loaded
+========================================
+
+This test suite validates that performance optimizations maintain functionality:
+
+🔍 Spatial Hashing: Validates O(1) lookups vs O(n) linear search
+🎆 Particle Pooling: Tests object reuse and memory management  
+🎨 Adaptive Rendering: Ensures visual consistency with optimizations
+⚡ Performance: Measures FPS across all difficulty levels
+💾 Memory: Monitors stability over extended sessions
+
+Click "Run All Tests" to begin comprehensive validation...
+    </div>
+
+    <!-- Load game dependencies -->
+    <script src="../src/js/utils.js"></script>
+    <script src="../src/js/maze.js"></script>
+    <script src="../src/js/player.js"></script>
+    <script src="../src/js/camera.js"></script>
+    <script src="../src/js/renderer.js"></script>
+    <script src="../src/js/particles.js"></script>
+    
+    <!-- Load test suites -->
+    <script src="critical-validation.js"></script>
+    <script src="performance-validation.js"></script>
+    
+    <script>
+        // Test runner UI controller
+        class TestRunnerUI {
+            constructor() {
+                this.consoleOutput = document.getElementById('consoleOutput');
+                this.testStatus = document.getElementById('testStatus');
+                this.progressBar = document.getElementById('progressBar');
+                this.originalConsoleLog = console.log;
+                this.testSuite = null;
+                this.currentProgress = 0;
+                this.totalTests = 8; // Number of major test categories
+                
+                this.setupUI();
+                this.interceptConsole();
+            }
+            
+            setupUI() {
+                document.getElementById('runCriticalTests').addEventListener('click', () => {
+                    this.runCriticalTests();
+                });
+                
+                document.getElementById('runAllTests').addEventListener('click', () => {
+                    this.runAllTests();
+                });
+                
+                document.getElementById('runSpatialTests').addEventListener('click', () => {
+                    this.runSpecificTest('spatial');
+                });
+                
+                document.getElementById('runParticleTests').addEventListener('click', () => {
+                    this.runSpecificTest('particle');
+                });
+                
+                document.getElementById('runPerformanceTests').addEventListener('click', () => {
+                    this.runSpecificTest('performance');
+                });
+                
+                document.getElementById('clearConsole').addEventListener('click', () => {
+                    this.clearConsole();
+                });
+            }
+            
+            interceptConsole() {
+                console.log = (...args) => {
+                    this.originalConsoleLog(...args);
+                    this.appendToConsole(args.join(' '));
+                    
+                    // Update progress based on console output
+                    const message = args.join(' ');
+                    if (message.includes('Testing') || message.includes('✅')) {
+                        this.updateProgress();
+                    }
+                };
+            }
+            
+            appendToConsole(message) {
+                this.consoleOutput.textContent += message + '\n';
+                this.consoleOutput.scrollTop = this.consoleOutput.scrollHeight;
+            }
+            
+            clearConsole() {
+                this.consoleOutput.textContent = 'Console cleared. Ready for new tests...\n';
+                this.currentProgress = 0;
+                this.updateProgressBar(0);
+                this.setStatus('Ready to run tests', '');
+            }
+            
+            setStatus(message, className) {
+                this.testStatus.textContent = message;
+                this.testStatus.className = `status ${className}`;
+            }
+            
+            updateProgress() {
+                this.currentProgress++;
+                const percentage = Math.min((this.currentProgress / this.totalTests) * 100, 100);
+                this.updateProgressBar(percentage);
+            }
+            
+            updateProgressBar(percentage) {
+                this.progressBar.style.width = percentage + '%';
+            }
+            
+            disableButtons() {
+                const buttons = document.querySelectorAll('.test-button:not(#clearConsole)');
+                buttons.forEach(btn => btn.disabled = true);
+            }
+            
+            enableButtons() {
+                const buttons = document.querySelectorAll('.test-button');
+                buttons.forEach(btn => btn.disabled = false);
+            }
+            
+            async runAllTests() {
+                try {
+                    this.disableButtons();
+                    this.clearConsole();
+                    this.setStatus('Running comprehensive test suite...', 'running');
+                    this.currentProgress = 0;
+                    
+                    this.testSuite = new PerformanceTestSuite();
+                    await this.testSuite.runAllTests();
+                    
+                    const hasErrors = this.testSuite.errors.length > 0;
+                    const hasFailures = this.testSuite.testResults.some(t => t.status === 'FAIL');
+                    
+                    if (hasErrors || hasFailures) {
+                        this.setStatus('Tests completed with issues', 'failed');
+                    } else {
+                        this.setStatus('All tests passed successfully!', 'passed');
+                    }
+                    
+                    this.updateProgressBar(100);
+                } catch (error) {
+                    this.setStatus('Test suite crashed', 'failed');
+                    this.appendToConsole(`CRITICAL ERROR: ${error.message}`);
+                } finally {
+                    this.enableButtons();
+                }
+            }
+            
+            async runSpecificTest(testType) {
+                try {
+                    this.disableButtons();
+                    this.clearConsole();
+                    this.currentProgress = 0;
+                    
+                    this.testSuite = new PerformanceTestSuite();
+                    
+                    switch (testType) {
+                        case 'spatial':
+                            this.setStatus('Testing spatial hashing...', 'running');
+                            await this.testSuite.testSpatialHashingAccuracy();
+                            break;
+                        case 'particle':
+                            this.setStatus('Testing particle system...', 'running');
+                            await this.testSuite.testParticleSystemIntegrity();
+                            break;
+                        case 'performance':
+                            this.setStatus('Testing performance...', 'running');
+                            await this.testSuite.testPerformanceRegression();
+                            break;
+                    }
+                    
+                    this.setStatus('Specific test completed', 'passed');
+                    this.updateProgressBar(100);
+                } catch (error) {
+                    this.setStatus('Test failed', 'failed');
+                    this.appendToConsole(`ERROR: ${error.message}`);
+                } finally {
+                    this.enableButtons();
+                }
+            }
+            
+            async runCriticalTests() {
+                try {
+                    this.disableButtons();
+                    this.clearConsole();
+                    this.setStatus('Running critical validation tests...', 'running');
+                    this.currentProgress = 0;
+                    
+                    const criticalTests = new CriticalValidationTests();
+                    await criticalTests.runCriticalTests();
+                    
+                    const hasCriticalFailures = criticalTests.criticalFailures.length > 0;
+                    const hasFailures = criticalTests.results.some(r => r.status === 'FAIL');
+                    
+                    if (hasCriticalFailures || hasFailures) {
+                        this.setStatus('CRITICAL ISSUES DETECTED', 'failed');
+                    } else {
+                        this.setStatus('All critical tests passed - Safe to deploy!', 'passed');
+                    }
+                    
+                    this.updateProgressBar(100);
+                } catch (error) {
+                    this.setStatus('Critical tests crashed', 'failed');
+                    this.appendToConsole(`CRITICAL ERROR: ${error.message}`);
+                } finally {
+                    this.enableButtons();
+                }
+            }
+        }
+        
+        // Initialize test runner when page loads
+        window.addEventListener('load', () => {
+            new TestRunnerUI();
+        });
+    </script>
+</body>
+</html>

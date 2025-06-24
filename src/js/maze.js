@@ -15,6 +15,13 @@ class Maze {
         this.endX = width - 2;
         this.endY = height - 2;
         
+        // Performance optimization: Spatial hash maps for O(1) lookups
+        this.doorMap = new Map(); // "x,y" -> door object
+        this.treasureMap = new Map(); // "x,y" -> treasure object
+        this.keyMap = new Map(); // "x,y" -> key object
+        this.pressurePlateMap = new Map(); // "x,y" -> pressure plate object
+        this.leverMap = new Map(); // "x,y" -> lever object
+        
         this.initializeGrid();
     }
     
@@ -86,6 +93,43 @@ class Maze {
         
         // Ensure the puzzle is solvable
         this.ensureSolvability();
+        
+        // Build spatial hash maps for performance
+        this.buildSpatialMaps();
+    }
+    
+    buildSpatialMaps() {
+        // Clear existing maps
+        this.doorMap.clear();
+        this.treasureMap.clear();
+        this.keyMap.clear();
+        this.pressurePlateMap.clear();
+        this.leverMap.clear();
+        
+        // Build hash maps for O(1) lookups
+        for (const door of this.doors) {
+            this.doorMap.set(`${door.x},${door.y}`, door);
+        }
+        
+        for (const treasure of this.treasures) {
+            if (!treasure.collected) {
+                this.treasureMap.set(`${treasure.x},${treasure.y}`, treasure);
+            }
+        }
+        
+        for (const key of this.keys) {
+            if (!key.collected) {
+                this.keyMap.set(`${key.x},${key.y}`, key);
+            }
+        }
+        
+        for (const plate of this.pressurePlates) {
+            this.pressurePlateMap.set(`${plate.x},${plate.y}`, plate);
+        }
+        
+        for (const lever of this.levers) {
+            this.leverMap.set(`${lever.x},${lever.y}`, lever);
+        }
     }
     
     getUnvisitedNeighbors(x, y) {
@@ -224,13 +268,18 @@ class Maze {
             return true; // Out of bounds is considered a wall
         }
         
-        // Check for locked doors (act as walls)
-        const door = this.getDoorAt(x, y);
+        // Check base grid first (fastest check)
+        if (this.grid[y][x] === 1) {
+            return true;
+        }
+        
+        // Only check doors if base tile is floor - use hash map for O(1) lookup
+        const door = this.doorMap.get(`${x},${y}`);
         if (door && !door.unlocked && !door.temporarilyOpen) {
             return true;
         }
         
-        return this.grid[y][x] === 1;
+        return false;
     }
     
     isFloor(x, y) {
@@ -326,15 +375,15 @@ class Maze {
     }
     
     getTreasureAt(x, y) {
-        return this.treasures.find(treasure => 
-            treasure.x === x && treasure.y === y && !treasure.collected
-        );
+        return this.treasureMap.get(`${x},${y}`);
     }
     
     collectTreasure(x, y) {
-        const treasure = this.getTreasureAt(x, y);
+        const treasure = this.treasureMap.get(`${x},${y}`);
         if (treasure) {
             treasure.collected = true;
+            // Remove from spatial map since it's collected
+            this.treasureMap.delete(`${x},${y}`);
             return treasure;
         }
         return null;
@@ -460,21 +509,23 @@ class Maze {
     }
     
     hasKeyAt(x, y) {
-        return this.keys.some(key => key.x === x && key.y === y && !key.collected);
+        return this.keyMap.has(`${x},${y}`);
     }
     
     getKeyAt(x, y) {
-        return this.keys.find(key => key.x === x && key.y === y && !key.collected);
+        return this.keyMap.get(`${x},${y}`);
     }
     
     getDoorAt(x, y) {
-        return this.doors.find(door => door.x === x && door.y === y);
+        return this.doorMap.get(`${x},${y}`);
     }
     
     collectKey(x, y) {
-        const key = this.getKeyAt(x, y);
+        const key = this.keyMap.get(`${x},${y}`);
         if (key) {
             key.collected = true;
+            // Remove from spatial map since it's collected
+            this.keyMap.delete(`${x},${y}`);
             return key;
         }
         return null;
@@ -632,11 +683,11 @@ class Maze {
     }
     
     getPressurePlateAt(x, y) {
-        return this.pressurePlates.find(plate => plate.x === x && plate.y === y);
+        return this.pressurePlateMap.get(`${x},${y}`);
     }
     
     getLeverAt(x, y) {
-        return this.levers.find(lever => lever.x === x && lever.y === y);
+        return this.leverMap.get(`${x},${y}`);
     }
     
     activatePressurePlate(x, y, particleSystem = null) {

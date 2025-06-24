@@ -320,38 +320,8 @@ class Game {
                 );
             }
             
-            // Create torch flame particles
-            const bounds = this.camera.getVisibleBounds();
-            for (const torch of this.maze.torches) {
-                // Only create particles for visible torches
-                if (torch.x >= bounds.startX && torch.x < bounds.endX &&
-                    torch.y >= bounds.startY && torch.y < bounds.endY) {
-                    
-                    // Create particles at ~30% chance per frame for continuous but not overwhelming effect
-                    if (Math.random() < 0.3) {
-                        let torchX = torch.x * TILE_SIZE + TILE_SIZE / 2;
-                        let torchY = torch.y * TILE_SIZE + TILE_SIZE / 2;
-                        
-                        // Offset based on wall side (same logic as renderer)
-                        switch (torch.side) {
-                            case 'top':
-                                torchY = torch.y * TILE_SIZE + 8;
-                                break;
-                            case 'bottom':
-                                torchY = torch.y * TILE_SIZE + TILE_SIZE - 8;
-                                break;
-                            case 'left':
-                                torchX = torch.x * TILE_SIZE + 8;
-                                break;
-                            case 'right':
-                                torchX = torch.x * TILE_SIZE + TILE_SIZE - 8;
-                                break;
-                        }
-                        
-                        this.particleSystem.createTorchFlame(torchX, torchY - 8);
-                    }
-                }
-            }
+            // Create torch flame particles (optimized with budget system)
+            this.updateTorchParticles();
         }
         
         // Update particle system
@@ -359,6 +329,60 @@ class Game {
         
         // Clear key pressed flags
         this.keyPressed = {};
+    }
+    
+    updateTorchParticles() {
+        // Performance optimization: limit torch particles with budget system
+        const maxTorchParticles = 8; // Max particles per frame from all torches
+        let particleBudget = maxTorchParticles;
+        
+        const bounds = this.camera.getVisibleBounds();
+        const visibleTorches = this.maze.torches.filter(torch => 
+            torch.x >= bounds.startX && torch.x < bounds.endX &&
+            torch.y >= bounds.startY && torch.y < bounds.endY
+        );
+        
+        // Distribute particles fairly among visible torches
+        if (visibleTorches.length > 0) {
+            const particlesPerTorch = Math.floor(particleBudget / visibleTorches.length);
+            const remainder = particleBudget % visibleTorches.length;
+            
+            for (let i = 0; i < visibleTorches.length && particleBudget > 0; i++) {
+                const torch = visibleTorches[i];
+                let torchParticles = particlesPerTorch;
+                
+                // Give remainder particles to first few torches
+                if (i < remainder) torchParticles++;
+                
+                // Only create particles if we have budget and random chance
+                if (torchParticles > 0 && Math.random() < 0.4) {
+                    let torchX = torch.x * TILE_SIZE + TILE_SIZE / 2;
+                    let torchY = torch.y * TILE_SIZE + TILE_SIZE / 2;
+                    
+                    // Offset based on wall side
+                    switch (torch.side) {
+                        case 'top':
+                            torchY = torch.y * TILE_SIZE + 8;
+                            break;
+                        case 'bottom':
+                            torchY = torch.y * TILE_SIZE + TILE_SIZE - 8;
+                            break;
+                        case 'left':
+                            torchX = torch.x * TILE_SIZE + 8;
+                            break;
+                        case 'right':
+                            torchX = torch.x * TILE_SIZE + TILE_SIZE - 8;
+                            break;
+                    }
+                    
+                    // Create limited particles
+                    for (let j = 0; j < Math.min(torchParticles, 2); j++) {
+                        this.particleSystem.createTorchFlame(torchX, torchY - 8);
+                        particleBudget--;
+                    }
+                }
+            }
+        }
     }
     
     handleInput() {

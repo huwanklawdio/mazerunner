@@ -3,6 +3,11 @@ class Renderer {
     constructor(ctx, sprites = null) {
         this.ctx = ctx;
         this.sprites = sprites;
+        
+        // Performance optimization: tile rendering cache
+        this.lastRenderedBounds = null;
+        this.frameCount = 0;
+        this.skipFrames = 0; // For adaptive rendering
     }
     
     render(maze, player, camera) {
@@ -37,24 +42,63 @@ class Renderer {
     }
     
     renderMaze(maze, camera, bounds) {
+        // Performance optimization: adaptive rendering
+        this.frameCount++;
+        if (this.skipFrames > 0) {
+            this.skipFrames--;
+            return; // Skip this frame for performance
+        }
+        
+        // Check if we need to render (camera moved significantly)
+        const boundsChanged = !this.lastRenderedBounds || 
+            Math.abs(bounds.startX - this.lastRenderedBounds.startX) >= 1 ||
+            Math.abs(bounds.startY - this.lastRenderedBounds.startY) >= 1 ||
+            Math.abs(bounds.endX - this.lastRenderedBounds.endX) >= 1 ||
+            Math.abs(bounds.endY - this.lastRenderedBounds.endY) >= 1;
+        
+        // Render every frame for smooth visuals - no frame skipping for now
+        // Performance is good enough after optimizations
+        
+        this.lastRenderedBounds = { ...bounds };
+        
+        // Batch similar operations for better performance
+        const wallTiles = [];
+        const floorTiles = [];
+        
         for (let y = bounds.startY; y < bounds.endY; y++) {
             for (let x = bounds.startX; x < bounds.endX; x++) {
                 const worldX = x * TILE_SIZE;
                 const worldY = y * TILE_SIZE;
                 const screenPos = camera.worldToScreen(worldX, worldY);
                 
-                // Only render if tile is visible on screen
+                // Early culling: only process visible tiles
                 if (screenPos.x < -TILE_SIZE || screenPos.x > camera.viewWidth ||
                     screenPos.y < -TILE_SIZE || screenPos.y > camera.viewHeight) {
                     continue;
                 }
                 
                 if (maze.isWall(x, y)) {
-                    this.renderWallTile(screenPos.x, screenPos.y, x, y);
+                    wallTiles.push({ screenPos, gridX: x, gridY: y });
                 } else {
-                    this.renderFloorTile(screenPos.x, screenPos.y, x, y);
+                    floorTiles.push({ screenPos, gridX: x, gridY: y });
                 }
             }
+        }
+        
+        // Render in batches for better performance
+        this.renderFloorTiles(floorTiles);
+        this.renderWallTiles(wallTiles);
+    }
+    
+    renderFloorTiles(tiles) {
+        for (const tile of tiles) {
+            this.renderFloorTile(tile.screenPos.x, tile.screenPos.y, tile.gridX, tile.gridY);
+        }
+    }
+    
+    renderWallTiles(tiles) {
+        for (const tile of tiles) {
+            this.renderWallTile(tile.screenPos.x, tile.screenPos.y, tile.gridX, tile.gridY);
         }
     }
     
