@@ -115,12 +115,13 @@
   - [x] Reduce notification durations for faster gameplay (2-3s instead of 3-5s)
   - [x] Implement priority queue for immediate display of completion notifications
   - [x] Optimize animation timing from 300ms to 100ms for smoother transitions
-- [ ] Add idle breathing animation to player character
-  - [ ] Add idleTime property and animation parameters to Player class
-  - [ ] Modify player update logic for smooth breathing when stationary
-  - [ ] Enhance getRenderPosition() with Math.sin() breathing offset
-  - [ ] Use subtle amplitude (1.5px) and slower frequency than keys
-  - [ ] Maintain compatibility with existing sprite animation system
+- [x] Add idle breathing animation to player character
+  - [x] Add idleTime property and animation parameters to Player class
+  - [x] Modify player update logic for smooth breathing when stationary
+  - [x] Enhance getRenderPosition() with Math.sin() breathing offset
+  - [x] Use subtle amplitude (1.5px) and slower frequency than keys (1.2 vs 3)
+  - [x] Maintain compatibility with existing sprite animation system
+  - [x] Reset idle timer when player starts moving for seamless transitions
 - [ ] Implement power-up system (speed boost, torch vision, etc.)
 - [ ] Add multi-level progression system
 - [ ] Create mirror puzzles with light beam reflection mechanics

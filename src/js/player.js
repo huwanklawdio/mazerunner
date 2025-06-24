@@ -15,6 +15,11 @@ class Player {
         this.animationTime = 0;
         this.animationSpeed = 8; // Frames per second
         this.isIdle = true;
+        
+        // Idle breathing animation properties
+        this.idleTime = 0;
+        this.breathingAmplitude = 0.6; // Pixels - very subtle travel length
+        this.breathingFrequency = 1.8; // Quicker breathing (keys use 3)
     }
     
     reset(x, y) {
@@ -28,6 +33,7 @@ class Player {
         this.animationFrame = 0;
         this.animationTime = 0;
         this.isIdle = true;
+        this.idleTime = 0;
     }
     
     move(dx, dy, maze) {
@@ -53,6 +59,7 @@ class Player {
             this.isIdle = false;
             this.interpolation = 0;
             this.animationFrame = 0;
+            this.idleTime = 0; // Reset idle timer when moving
             
             return { success: true, newX, newY };
         }
@@ -99,6 +106,7 @@ class Player {
         } else {
             // Idle animation (subtle breathing effect)
             this.animationFrame = 0;
+            this.idleTime += deltaTime / 1000; // Track idle time in seconds
         }
     }
     
@@ -108,6 +116,15 @@ class Player {
             const renderX = this.x + (this.targetX - this.x) * this.interpolation;
             const renderY = this.y + (this.targetY - this.y) * this.interpolation;
             return { x: renderX, y: renderY };
+        }
+        
+        // Apply subtle breathing animation when idle
+        if (this.isIdle && this.idleTime > 0) {
+            const breathingOffset = Math.sin(this.idleTime * this.breathingFrequency) * this.breathingAmplitude;
+            return { 
+                x: this.x, 
+                y: this.y + breathingOffset * 0.1 // Very subtle vertical movement
+            };
         }
         
         return { x: this.x, y: this.y };
