@@ -8,7 +8,7 @@ class Maze {
         this.treasures = []; // Array of treasure positions {x, y, type, collected}
         this.keys = []; // Array of key positions {x, y, color, collected}
         this.doors = []; // Array of door positions {x, y, color, unlocked}
-        this.pressurePlates = []; // Array of pressure plates {x, y, activated, connectedDoors, timer}
+        this.pressurePlates = []; // Array of pressure plates {x, y, activated, affectedWalls, timer}
         this.levers = []; // Array of levers {x, y, activated, affectedCells}
         this.startX = 1;
         this.startY = 1;
@@ -507,20 +507,23 @@ class Maze {
             const location = locations[index];
             locations.splice(index, 1);
             
-            // Find doors that this plate will control
-            const connectedDoors = this.findNearbyDoors(location.x, location.y, 8);
+            // Find walls that this plate will control
+            const affectedWalls = this.findAffectedWalls(location.x, location.y);
             
-            const plate = {
-                x: location.x,
-                y: location.y,
-                activated: false,
-                connectedDoors: connectedDoors,
-                timer: 0,
-                maxTimer: 300 // 5 seconds at 60fps
-            };
-            
-            this.pressurePlates.push(plate);
-            console.log('Placed pressure plate at', location.x, location.y, 'with', connectedDoors.length, 'connected doors');
+            // Only place pressure plate if it has walls to affect
+            if (affectedWalls.length > 0) {
+                const plate = {
+                    x: location.x,
+                    y: location.y,
+                    activated: false,
+                    affectedWalls: affectedWalls,
+                    timer: 0,
+                    maxTimer: 300 // 5 seconds at 60fps
+                };
+                
+                this.pressurePlates.push(plate);
+                console.log('Placed pressure plate at', location.x, location.y, 'affecting', affectedWalls.length, 'walls');
+            }
         }
     }
     
@@ -561,15 +564,55 @@ class Maze {
         return tiles;
     }
     
-    findNearbyDoors(x, y, maxDistance) {
-        const nearbyDoors = [];
-        for (const door of this.doors) {
-            const distance = Math.abs(door.x - x) + Math.abs(door.y - y);
-            if (distance <= maxDistance) {
-                nearbyDoors.push(door);
+    findAffectedWalls(plateX, plateY) {
+        const walls = [];
+        const directions = [
+            { x: 0, y: -1, name: 'north' },  // Up
+            { x: 1, y: 0, name: 'east' },   // Right  
+            { x: 0, y: 1, name: 'south' },  // Down
+            { x: -1, y: 0, name: 'west' }   // Left
+        ];
+        
+        // Check walls in all 4 directions from the pressure plate
+        for (const dir of directions) {
+            const wallX = plateX + dir.x;
+            const wallY = plateY + dir.y;
+            
+            // Only affect walls that are:
+            // 1. Actually walls (not already floor)
+            // 2. Not boundary walls
+            // 3. Would create useful passages
+            if (this.isWall(wallX, wallY) && 
+                wallX > 0 && wallX < this.width - 1 && 
+                wallY > 0 && wallY < this.height - 1 &&
+                this.wouldCreateUsefulPassage(wallX, wallY, dir)) {
+                
+                walls.push({
+                    x: wallX,
+                    y: wallY,
+                    direction: dir.name,
+                    originalState: this.grid[wallY][wallX],
+                    temporaryFloor: false
+                });
             }
         }
-        return nearbyDoors;
+        
+        return walls;
+    }
+    
+    wouldCreateUsefulPassage(wallX, wallY, direction) {
+        // Check if removing this wall would create a meaningful shortcut
+        // Look for floor tiles on the opposite side of the wall
+        const oppositeX = wallX + direction.x;
+        const oppositeY = wallY + direction.y;
+        
+        // Must have floor on the opposite side to create a passage
+        if (oppositeX >= 0 && oppositeX < this.width && 
+            oppositeY >= 0 && oppositeY < this.height) {
+            return this.grid[oppositeY][oppositeX] === 0; // Floor tile
+        }
+        
+        return false;
     }
     
     findAffectedCells(x, y) {
@@ -597,15 +640,24 @@ class Maze {
         return this.levers.find(lever => lever.x === x && lever.y === y);
     }
     
-    activatePressurePlate(x, y) {
+    activatePressurePlate(x, y, particleSystem = null) {
         const plate = this.getPressurePlateAt(x, y);
         if (plate && !plate.activated) {
             plate.activated = true;
             plate.timer = plate.maxTimer;
             
-            // Open connected doors temporarily
-            for (const door of plate.connectedDoors) {
-                door.temporarilyOpen = true;
+            // Convert affected walls to temporary floors
+            for (const wall of plate.affectedWalls) {
+                this.grid[wall.y][wall.x] = 0; // Make it a floor
+                wall.temporaryFloor = true;
+                
+                // Create wall opening particle effect
+                if (particleSystem) {
+                    particleSystem.createWallOpen(
+                        wall.x * TILE_SIZE + TILE_SIZE / 2,
+                        wall.y * TILE_SIZE + TILE_SIZE / 2
+                    );
+                }
             }
             return plate;
         }
@@ -634,15 +686,28 @@ class Maze {
         return null;
     }
     
-    updatePressurePlates() {
+    updatePressurePlates(particleSystem = null) {
         for (const plate of this.pressurePlates) {
             if (plate.activated && plate.timer > 0) {
+                // Create warning particles when time is running low
+                if (plate.timer === 60 && particleSystem) { // 1 second warning
+                    for (const wall of plate.affectedWalls) {
+                        if (wall.temporaryFloor) {
+                            particleSystem.createWallClose(
+                                wall.x * TILE_SIZE + TILE_SIZE / 2,
+                                wall.y * TILE_SIZE + TILE_SIZE / 2
+                            );
+                        }
+                    }
+                }
+                
                 plate.timer--;
                 if (plate.timer <= 0) {
                     plate.activated = false;
-                    // Close connected doors
-                    for (const door of plate.connectedDoors) {
-                        door.temporarilyOpen = false;
+                    // Restore walls to their original state
+                    for (const wall of plate.affectedWalls) {
+                        this.grid[wall.y][wall.x] = wall.originalState;
+                        wall.temporaryFloor = false;
                     }
                 }
             }

@@ -319,6 +319,50 @@ class ParticleSystem {
         this.particles = this.particles.filter(particle => particle.update(deltaTime));
     }
     
+    createWallOpen(x, y) {
+        // Magical wall opening effect - cyan sparkles
+        for (let i = 0; i < 15; i++) {
+            const angle = (Math.PI * 2 * i) / 15;
+            const speed = 2 + Math.random() * 3;
+            const vx = Math.cos(angle) * speed;
+            const vy = Math.sin(angle) * speed;
+            
+            const colors = ['#00ffff', '#40e0d0', '#00ced1', '#5f9ea0'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            this.particles.push(new Particle(
+                x + (Math.random() - 0.5) * TILE_SIZE,
+                y + (Math.random() - 0.5) * TILE_SIZE,
+                vx, vy,
+                800 + Math.random() * 400, // 0.8-1.2 seconds
+                color,
+                2 + Math.random() * 2
+            ));
+        }
+    }
+    
+    createWallClose(x, y) {
+        // Warning effect when wall is about to close - red sparks
+        for (let i = 0; i < 10; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 1 + Math.random() * 2;
+            const vx = Math.cos(angle) * speed;
+            const vy = Math.sin(angle) * speed;
+            
+            const colors = ['#ff4444', '#ff6666', '#ffaaaa'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            this.particles.push(new Particle(
+                x + (Math.random() - 0.5) * TILE_SIZE,
+                y + (Math.random() - 0.5) * TILE_SIZE,
+                vx, vy,
+                600 + Math.random() * 200, // 0.6-0.8 seconds
+                color,
+                1 + Math.random() * 1.5
+            ));
+        }
+    }
+    
     render(ctx, camera) {
         this.particles.forEach(particle => particle.render(ctx, camera));
     }

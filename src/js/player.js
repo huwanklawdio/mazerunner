@@ -54,19 +54,23 @@ class Player {
             this.interpolation = 0;
             this.animationFrame = 0;
             
-            // Check for pressure plate activation
-            const plate = maze.getPressurePlateAt(newX, newY);
-            if (plate && !plate.activated) {
-                const activated = maze.activatePressurePlate(newX, newY);
-                if (activated) {
-                    console.log('Pressure plate activated!', activated);
-                }
-            }
-            
-            return true;
+            return { success: true, newX, newY };
         }
         
         return false;
+    }
+    
+    handlePressurePlateActivation(maze, particleSystem = null) {
+        // Check for pressure plate activation at current position
+        const plate = maze.getPressurePlateAt(this.x, this.y);
+        if (plate && !plate.activated) {
+            const activated = maze.activatePressurePlate(this.x, this.y, particleSystem);
+            if (activated) {
+                console.log('Pressure plate activated!', activated);
+                return activated;
+            }
+        }
+        return null;
     }
     
     update(deltaTime, maze) {

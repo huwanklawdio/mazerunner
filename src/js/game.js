@@ -258,7 +258,7 @@ class Game {
             this.checkTreasureCollection();
             
             // Update environmental puzzles
-            this.maze.updatePressurePlates();
+            this.maze.updatePressurePlates(this.particleSystem);
             
             // Update timer
             this.currentTime = (Date.now() - this.startTime) / 1000;
@@ -356,19 +356,35 @@ class Game {
             if (this.keyPressed['ArrowUp']) {
                 attemptedMove = true;
                 direction = 'up';
-                moved = this.player.move(0, -1, this.maze);
+                const moveResult = this.player.move(0, -1, this.maze);
+                moved = moveResult.success || moveResult === true;
+                if (moved && moveResult.newX !== undefined) {
+                    this.checkPressurePlateActivation(moveResult.newX, moveResult.newY);
+                }
             } else if (this.keyPressed['ArrowDown']) {
                 attemptedMove = true;
                 direction = 'down';
-                moved = this.player.move(0, 1, this.maze);
+                const moveResult = this.player.move(0, 1, this.maze);
+                moved = moveResult.success || moveResult === true;
+                if (moved && moveResult.newX !== undefined) {
+                    this.checkPressurePlateActivation(moveResult.newX, moveResult.newY);
+                }
             } else if (this.keyPressed['ArrowLeft']) {
                 attemptedMove = true;
                 direction = 'left';
-                moved = this.player.move(-1, 0, this.maze);
+                const moveResult = this.player.move(-1, 0, this.maze);
+                moved = moveResult.success || moveResult === true;
+                if (moved && moveResult.newX !== undefined) {
+                    this.checkPressurePlateActivation(moveResult.newX, moveResult.newY);
+                }
             } else if (this.keyPressed['ArrowRight']) {
                 attemptedMove = true;
                 direction = 'right';
-                moved = this.player.move(1, 0, this.maze);
+                const moveResult = this.player.move(1, 0, this.maze);
+                moved = moveResult.success || moveResult === true;
+                if (moved && moveResult.newX !== undefined) {
+                    this.checkPressurePlateActivation(moveResult.newX, moveResult.newY);
+                }
             }
             
             // Check for lever activation
@@ -397,6 +413,7 @@ class Game {
                         playerPos.y * TILE_SIZE + TILE_SIZE / 2,
                         direction
                     );
+                    
                 } else {
                     // Check if collision was with a door that can be unlocked
                     let newX = this.player.x;
@@ -435,6 +452,14 @@ class Game {
                     }
                 }
             }
+        }
+    }
+    
+    checkPressurePlateActivation(x, y) {
+        const plate = this.maze.getPressurePlateAt(x, y);
+        if (plate && !plate.activated) {
+            this.maze.activatePressurePlate(x, y, this.particleSystem);
+            console.log('Pressure plate activated at', x, y);
         }
     }
     

@@ -26,6 +26,7 @@ class Renderer {
         // Render environmental puzzles
         this.renderPressurePlates(maze, camera);
         this.renderLevers(maze, camera);
+        this.renderTemporaryWalls(maze, camera);
         
         // Render player
         this.renderPlayer(player, camera);
@@ -742,19 +743,19 @@ class Renderer {
                 this.ctx.arc(centerX, centerY, 10, -Math.PI/2, -Math.PI/2 + (Math.PI * 2 * progress));
                 this.ctx.stroke();
                 
-                // Draw connection lines to affected doors
+                // Draw connection lines to affected walls
                 this.ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
                 this.ctx.lineWidth = 1;
                 this.ctx.setLineDash([5, 5]);
                 
-                for (const door of plate.connectedDoors) {
-                    const doorWorldX = door.x * TILE_SIZE + TILE_SIZE / 2;
-                    const doorWorldY = door.y * TILE_SIZE + TILE_SIZE / 2;
-                    const doorScreenPos = camera.worldToScreen(doorWorldX, doorWorldY);
+                for (const wall of plate.affectedWalls) {
+                    const wallWorldX = wall.x * TILE_SIZE + TILE_SIZE / 2;
+                    const wallWorldY = wall.y * TILE_SIZE + TILE_SIZE / 2;
+                    const wallScreenPos = camera.worldToScreen(wallWorldX, wallWorldY);
                     
                     this.ctx.beginPath();
                     this.ctx.moveTo(centerX, centerY);
-                    this.ctx.lineTo(doorScreenPos.x, doorScreenPos.y);
+                    this.ctx.lineTo(wallScreenPos.x, wallScreenPos.y);
                     this.ctx.stroke();
                 }
                 
@@ -809,6 +810,62 @@ class Renderer {
                 this.ctx.textAlign = 'center';
                 this.ctx.fillText('E', centerX, centerY - 15);
             }
+        }
+    }
+    
+    renderTemporaryWalls(maze, camera) {
+        for (const plate of maze.pressurePlates) {
+            if (plate.activated) {
+                for (const wall of plate.affectedWalls) {
+                    if (wall.temporaryFloor) {
+                        const worldX = wall.x * TILE_SIZE;
+                        const worldY = wall.y * TILE_SIZE;
+                        const screenPos = camera.worldToScreen(worldX, worldY);
+                        
+                        // Only render if visible
+                        if (screenPos.x < -TILE_SIZE || screenPos.x > camera.viewWidth ||
+                            screenPos.y < -TILE_SIZE || screenPos.y > camera.viewHeight) {
+                            continue;
+                        }
+                        
+                        // Draw temporary floor with special visual effect
+                        this.drawTemporaryFloor(screenPos.x, screenPos.y, plate.timer / plate.maxTimer);
+                    }
+                }
+            }
+        }
+    }
+    
+    drawTemporaryFloor(x, y, timeProgress) {
+        const ctx = this.ctx;
+        const time = Date.now() / 1000;
+        
+        // Base floor tile
+        ctx.fillStyle = COLORS.FLOOR;
+        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+        
+        // Pulsing magical effect
+        const pulseIntensity = 0.3 + 0.4 * Math.sin(time * 6);
+        ctx.fillStyle = `rgba(0, 255, 255, ${pulseIntensity})`;  // Cyan glow
+        ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+        
+        // Warning effect when time is running out
+        if (timeProgress < 0.3) {
+            const warningIntensity = 0.5 + 0.5 * Math.sin(time * 12); // Faster pulsing
+            ctx.fillStyle = `rgba(255, 0, 0, ${warningIntensity * 0.4})`;  // Red warning
+            ctx.fillRect(x + 1, y + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+        }
+        
+        // Particle-like dots to show instability
+        for (let i = 0; i < 3; i++) {
+            const dotX = x + 4 + (i * 6) + Math.sin(time * 4 + i) * 2;
+            const dotY = y + TILE_SIZE / 2 + Math.cos(time * 3 + i) * 3;
+            const dotAlpha = 0.5 + 0.3 * Math.sin(time * 8 + i * 2);
+            
+            ctx.fillStyle = `rgba(255, 255, 255, ${dotAlpha})`;
+            ctx.beginPath();
+            ctx.arc(dotX, dotY, 1, 0, Math.PI * 2);
+            ctx.fill();
         }
     }
     
