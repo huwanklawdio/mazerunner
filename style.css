@@ -5,7 +5,10 @@
 }
 
 body {
-    background: #1a1a1a;
+    background: #0d0d0d;
+    background-image: 
+        radial-gradient(circle at 20% 50%, rgba(139, 115, 85, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(74, 74, 74, 0.1) 0%, transparent 50%);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -16,8 +19,12 @@ body {
 
 .game-container {
     position: relative;
-    border: 2px solid #333;
-    background: #000;
+    border: 3px solid #4a4a4a;
+    border-style: ridge;
+    background: #1a1a1a;
+    box-shadow: 
+        0 0 20px rgba(0, 0, 0, 0.8),
+        inset 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
 #gameCanvas {
@@ -37,7 +44,8 @@ body {
 }
 
 .game-info {
-    background: rgba(0, 0, 0, 0.7);
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), rgba(26, 26, 26, 0.8));
+    border-bottom: 2px solid #4a4a4a;
     padding: 10px 20px;
     text-align: center;
     font-size: 14px;
@@ -103,17 +111,21 @@ body {
 }
 
 .control-button {
-    background: none;
-    border: 1px solid #fff;
+    background: rgba(74, 74, 74, 0.3);
+    border: 2px solid #666;
+    border-style: outset;
     color: #fff;
     padding: 5px 10px;
     font-size: 16px;
     cursor: pointer;
     border-radius: 3px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 .control-button:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 215, 0, 0.2);
+    border-color: #daa520;
+    box-shadow: 0 0 5px rgba(255, 215, 0, 0.3);
 }
 
 .control-button.disabled {
@@ -124,7 +136,8 @@ body {
 .timer-display {
     font-size: 16px;
     font-weight: bold;
-    color: #4CAF50;
+    color: #ffd700;
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
 }
 
 .stats-display {

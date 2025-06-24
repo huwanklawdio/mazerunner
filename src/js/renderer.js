@@ -43,50 +43,104 @@ class Renderer {
     }
     
     renderWallTile(x, y, gridX, gridY) {
-        // Base wall color
+        // Base stone wall color
         this.ctx.fillStyle = COLORS.WALL;
         this.ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
         
-        // Add texture pattern based on grid position
-        const pattern = (gridX + gridY) % 3;
+        // Stone texture pattern based on grid position
+        const pattern = (gridX * 7 + gridY * 13) % 5;
         
-        // Dark accent lines
+        // Stone blocks and mortar
         this.ctx.fillStyle = COLORS.WALL_DARK;
-        if (pattern === 0) {
-            // Vertical lines
-            this.ctx.fillRect(x + 8, y, 2, TILE_SIZE);
-            this.ctx.fillRect(x + 22, y, 2, TILE_SIZE);
-        } else if (pattern === 1) {
-            // Horizontal lines
-            this.ctx.fillRect(x, y + 8, TILE_SIZE, 2);
-            this.ctx.fillRect(x, y + 22, TILE_SIZE, 2);
+        
+        // Horizontal mortar lines
+        this.ctx.fillRect(x, y + 10, TILE_SIZE, 2);
+        this.ctx.fillRect(x, y + 22, TILE_SIZE, 2);
+        
+        // Vertical mortar lines based on pattern
+        if (pattern < 3) {
+            this.ctx.fillRect(x + 15, y, 2, 12);
+            this.ctx.fillRect(x + 15, y + 12, 2, 10);
         } else {
-            // Corner accents
-            this.ctx.fillRect(x, y, 8, 8);
-            this.ctx.fillRect(x + 24, y + 24, 8, 8);
+            this.ctx.fillRect(x + 10, y, 2, 10);
+            this.ctx.fillRect(x + 20, y + 12, 2, 12);
         }
         
-        // Light highlights
+        // Moss patches
+        if ((gridX * 3 + gridY * 5) % 7 === 0) {
+            this.ctx.fillStyle = COLORS.WALL_MOSS;
+            this.ctx.fillRect(x + 2, y + 2, 6, 4);
+            this.ctx.fillRect(x + 4, y + 6, 3, 2);
+        }
+        
+        // Cracks
+        if ((gridX * 11 + gridY * 7) % 13 === 0) {
+            this.ctx.strokeStyle = COLORS.WALL_DARK;
+            this.ctx.lineWidth = 1;
+            this.ctx.beginPath();
+            this.ctx.moveTo(x + 8, y + 5);
+            this.ctx.lineTo(x + 12, y + 15);
+            this.ctx.lineTo(x + 10, y + 25);
+            this.ctx.stroke();
+        }
+        
+        // Light edge (3D effect)
         this.ctx.fillStyle = COLORS.WALL_LIGHT;
-        this.ctx.fillRect(x, y, TILE_SIZE, 2);
-        this.ctx.fillRect(x, y, 2, TILE_SIZE);
+        this.ctx.fillRect(x, y, TILE_SIZE, 1);
+        this.ctx.fillRect(x, y, 1, TILE_SIZE);
+        
+        // Dark edge (depth)
+        this.ctx.fillStyle = COLORS.WALL_DARK;
+        this.ctx.fillRect(x + TILE_SIZE - 1, y, 1, TILE_SIZE);
+        this.ctx.fillRect(x, y + TILE_SIZE - 1, TILE_SIZE, 1);
     }
     
     renderFloorTile(x, y, gridX, gridY) {
-        // Base floor color
+        // Base cobblestone color
         this.ctx.fillStyle = COLORS.FLOOR;
         this.ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
         
-        // Subtle checkerboard pattern
-        if ((gridX + gridY) % 2 === 0) {
-            this.ctx.fillStyle = COLORS.FLOOR_DARK;
-            this.ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+        // Cobblestone pattern
+        const pattern = (gridX * 13 + gridY * 7) % 4;
+        
+        // Stone variations
+        this.ctx.fillStyle = COLORS.FLOOR_DARK;
+        if (pattern === 0) {
+            // Top-left stone
+            this.ctx.fillRect(x + 2, y + 2, 12, 12);
+            this.ctx.fillRect(x + 16, y + 16, 14, 14);
+        } else if (pattern === 1) {
+            // Top-right stone
+            this.ctx.fillRect(x + 16, y + 2, 14, 12);
+            this.ctx.fillRect(x + 2, y + 16, 12, 14);
+        } else if (pattern === 2) {
+            // Center stone
+            this.ctx.fillRect(x + 8, y + 8, 16, 16);
         }
         
-        // Grid lines
-        this.ctx.strokeStyle = '#ddd';
+        // Light stones
+        this.ctx.fillStyle = COLORS.FLOOR_LIGHT;
+        if (pattern === 3) {
+            this.ctx.fillRect(x + 4, y + 4, 10, 10);
+            this.ctx.fillRect(x + 18, y + 18, 10, 10);
+        }
+        
+        // Mortar lines
+        this.ctx.strokeStyle = COLORS.FLOOR_DARK;
         this.ctx.lineWidth = 1;
-        this.ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+        this.ctx.beginPath();
+        this.ctx.moveTo(x + 15, y);
+        this.ctx.lineTo(x + 15, y + TILE_SIZE);
+        this.ctx.moveTo(x, y + 15);
+        this.ctx.lineTo(x + TILE_SIZE, y + 15);
+        this.ctx.stroke();
+        
+        // Occasional debris/dirt
+        if ((gridX * 17 + gridY * 23) % 11 === 0) {
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            this.ctx.fillRect(x + 20, y + 22, 3, 2);
+            this.ctx.fillRect(x + 24, y + 24, 2, 2);
+        }
     }
     
     renderSpecialTiles(maze, camera) {
@@ -131,16 +185,21 @@ class Renderer {
         const centerX = screenPos.x + TILE_SIZE / 2;
         const centerY = screenPos.y + TILE_SIZE / 2;
         
-        // Movement trail effect (if moving)
+        // Movement trail effect (if moving) - dust particles
         if (player.isMoving) {
-            const trailAlpha = 0.2 * (1 - player.interpolation);
+            const trailAlpha = 0.3 * (1 - player.interpolation);
             const trailX = screenPos.x + (player.x - player.targetX) * TILE_SIZE * player.interpolation + TILE_SIZE / 2;
             const trailY = screenPos.y + (player.y - player.targetY) * TILE_SIZE * player.interpolation + TILE_SIZE / 2;
             
-            this.ctx.fillStyle = `rgba(74, 144, 226, ${trailAlpha})`;
-            this.ctx.beginPath();
-            this.ctx.arc(trailX, trailY, 8, 0, Math.PI * 2);
-            this.ctx.fill();
+            // Dust clouds
+            this.ctx.fillStyle = `rgba(139, 115, 85, ${trailAlpha})`;
+            for (let i = 0; i < 3; i++) {
+                const offsetX = (Math.random() - 0.5) * 10;
+                const offsetY = (Math.random() - 0.5) * 5 + 5;
+                this.ctx.beginPath();
+                this.ctx.arc(trailX + offsetX, trailY + offsetY, 3 + Math.random() * 2, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
         }
         
         // Draw animated person sprite
@@ -148,13 +207,12 @@ class Renderer {
     }
     
     drawPersonSprite(x, y, facing, frame, isMoving) {
-        const size = 20;
-        const headSize = 6;
-        const bodyHeight = 12;
+        const size = 24;
+        const bodyHeight = 14;
         
         // Shadow
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-        this.ctx.fillRect(x - size/2 + 2, y + size/2 - 2, size, 3);
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        this.ctx.fillRect(x - size/2 + 2, y + size/2 - 2, size - 4, 4);
         
         // Calculate walking animation offset
         let walkOffset = 0;
@@ -170,103 +228,113 @@ class Renderer {
         // Body position
         const bodyY = y + walkOffset;
         
-        // Head
-        this.ctx.fillStyle = '#ffdbac'; // Skin color
-        this.ctx.beginPath();
-        this.ctx.arc(x, bodyY - bodyHeight/2 - headSize/2, headSize/2, 0, Math.PI * 2);
-        this.ctx.fill();
+        // Knight Helmet
+        this.ctx.fillStyle = COLORS.ARMOR_DARK;
+        this.ctx.fillRect(x - 6, bodyY - bodyHeight/2 - 10, 12, 8);
         
-        // Hair
-        this.ctx.fillStyle = '#8B4513'; // Brown hair
-        this.ctx.beginPath();
-        this.ctx.arc(x, bodyY - bodyHeight/2 - headSize/2 - 1, headSize/2 + 1, Math.PI, Math.PI * 2);
-        this.ctx.fill();
+        // Helmet highlights
+        this.ctx.fillStyle = COLORS.ARMOR_LIGHT;
+        this.ctx.fillRect(x - 5, bodyY - bodyHeight/2 - 9, 2, 6);
+        this.ctx.fillRect(x + 3, bodyY - bodyHeight/2 - 9, 2, 6);
         
-        // Body
-        this.ctx.fillStyle = COLORS.PLAYER;
-        this.ctx.fillRect(x - 4, bodyY - bodyHeight/2, 8, bodyHeight);
+        // Visor slot
+        this.ctx.fillStyle = '#000';
+        this.ctx.fillRect(x - 4, bodyY - bodyHeight/2 - 7, 8, 2);
         
-        // Arms
-        this.ctx.strokeStyle = '#ffdbac';
-        this.ctx.lineWidth = 3;
-        this.ctx.lineCap = 'round';
+        // Eyes through visor
+        if (facing !== 'up') {
+            this.ctx.fillStyle = '#fff';
+            if (facing === 'down') {
+                this.ctx.fillRect(x - 3, bodyY - bodyHeight/2 - 7, 2, 2);
+                this.ctx.fillRect(x + 1, bodyY - bodyHeight/2 - 7, 2, 2);
+            } else if (facing === 'left') {
+                this.ctx.fillRect(x - 2, bodyY - bodyHeight/2 - 7, 2, 2);
+            } else if (facing === 'right') {
+                this.ctx.fillRect(x, bodyY - bodyHeight/2 - 7, 2, 2);
+            }
+        }
+        
+        // Chest armor
+        this.ctx.fillStyle = COLORS.ARMOR_BASE;
+        this.ctx.fillRect(x - 6, bodyY - bodyHeight/2, 12, bodyHeight);
+        
+        // Chest plate highlight
+        this.ctx.fillStyle = COLORS.ARMOR_LIGHT;
+        this.ctx.fillRect(x - 5, bodyY - bodyHeight/2 + 1, 3, bodyHeight - 2);
+        
+        // Chest emblem
+        this.ctx.fillStyle = COLORS.ARMOR_ACCENT;
+        this.ctx.fillRect(x - 1, bodyY - bodyHeight/2 + 3, 2, 3);
+        
+        // Arms (with armor)
+        this.ctx.fillStyle = COLORS.ARMOR_DARK;
         
         if (facing === 'right' || facing === 'left') {
             // Side view arms
-            this.ctx.beginPath();
-            this.ctx.moveTo(x - 4, bodyY - 2);
-            this.ctx.lineTo(x - 8, bodyY + 2 + armSwing);
-            this.ctx.stroke();
-            
-            this.ctx.beginPath();
-            this.ctx.moveTo(x + 4, bodyY - 2);
-            this.ctx.lineTo(x + 8, bodyY + 2 - armSwing);
-            this.ctx.stroke();
+            this.ctx.fillRect(x - 7, bodyY - 2, 4, 6 + Math.abs(armSwing/2));
+            this.ctx.fillRect(x + 3, bodyY - 2, 4, 6 + Math.abs(armSwing/2));
         } else {
             // Front/back view arms
-            this.ctx.beginPath();
-            this.ctx.moveTo(x - 4, bodyY - 2);
-            this.ctx.lineTo(x - 6, bodyY + 4 + armSwing);
-            this.ctx.stroke();
-            
-            this.ctx.beginPath();
-            this.ctx.moveTo(x + 4, bodyY - 2);
-            this.ctx.lineTo(x + 6, bodyY + 4 - armSwing);
-            this.ctx.stroke();
+            this.ctx.fillRect(x - 8, bodyY - 2 + armSwing, 5, 7);
+            this.ctx.fillRect(x + 3, bodyY - 2 - armSwing, 5, 7);
         }
         
-        // Legs
-        this.ctx.strokeStyle = '#4169E1'; // Blue pants
-        this.ctx.lineWidth = 4;
+        // Sword on back (visible from behind and sides)
+        if (facing === 'up' || facing === 'left' || facing === 'right') {
+            // Sword handle
+            this.ctx.fillStyle = '#8B4513';
+            this.ctx.fillRect(x + 2, bodyY - bodyHeight/2 - 12, 3, 6);
+            
+            // Sword guard
+            this.ctx.fillStyle = COLORS.ARMOR_ACCENT;
+            this.ctx.fillRect(x - 1, bodyY - bodyHeight/2 - 7, 7, 2);
+            
+            // Sword blade (partial)
+            this.ctx.fillStyle = COLORS.ARMOR_LIGHT;
+            this.ctx.fillRect(x + 3, bodyY - bodyHeight/2 - 6, 2, 4);
+        }
+        
+        // Leg armor
+        this.ctx.fillStyle = COLORS.ARMOR_DARK;
         
         if (facing === 'right' || facing === 'left') {
             // Side view legs
-            this.ctx.beginPath();
-            this.ctx.moveTo(x - 2, bodyY + bodyHeight/2);
-            this.ctx.lineTo(x - 2 + legOffset, bodyY + bodyHeight/2 + 8);
-            this.ctx.stroke();
+            this.ctx.fillRect(x - 4 + legOffset, bodyY + bodyHeight/2, 4, 8);
+            this.ctx.fillRect(x - legOffset, bodyY + bodyHeight/2, 4, 8);
             
-            this.ctx.beginPath();
-            this.ctx.moveTo(x + 2, bodyY + bodyHeight/2);
-            this.ctx.lineTo(x + 2 - legOffset, bodyY + bodyHeight/2 + 8);
-            this.ctx.stroke();
+            // Knee plates
+            this.ctx.fillStyle = COLORS.ARMOR_BASE;
+            this.ctx.fillRect(x - 3 + legOffset, bodyY + bodyHeight/2 + 2, 2, 2);
+            this.ctx.fillRect(x + 1 - legOffset, bodyY + bodyHeight/2 + 2, 2, 2);
         } else {
             // Front/back view legs
-            this.ctx.beginPath();
-            this.ctx.moveTo(x - 2, bodyY + bodyHeight/2);
-            this.ctx.lineTo(x - 2 + legOffset, bodyY + bodyHeight/2 + 8);
-            this.ctx.stroke();
+            this.ctx.fillRect(x - 4 + legOffset, bodyY + bodyHeight/2, 3, 8);
+            this.ctx.fillRect(x + 1 - legOffset, bodyY + bodyHeight/2, 3, 8);
             
-            this.ctx.beginPath();
-            this.ctx.moveTo(x + 2, bodyY + bodyHeight/2);
-            this.ctx.lineTo(x + 2 - legOffset, bodyY + bodyHeight/2 + 8);
-            this.ctx.stroke();
+            // Knee plates
+            this.ctx.fillStyle = COLORS.ARMOR_BASE;
+            this.ctx.fillRect(x - 3 + legOffset, bodyY + bodyHeight/2 + 2, 2, 2);
+            this.ctx.fillRect(x + 1 - legOffset, bodyY + bodyHeight/2 + 2, 2, 2);
         }
         
-        // Eyes (direction-dependent)
-        this.ctx.fillStyle = '#000';
-        if (facing === 'up') {
-            // Back view - no eyes visible
-        } else if (facing === 'down') {
-            // Front view - both eyes
-            this.ctx.fillRect(x - 2, bodyY - bodyHeight/2 - headSize/2, 1, 1);
-            this.ctx.fillRect(x + 1, bodyY - bodyHeight/2 - headSize/2, 1, 1);
-        } else if (facing === 'left') {
-            // Left profile
-            this.ctx.fillRect(x - 1, bodyY - bodyHeight/2 - headSize/2, 1, 1);
-        } else if (facing === 'right') {
-            // Right profile
-            this.ctx.fillRect(x + 1, bodyY - bodyHeight/2 - headSize/2, 1, 1);
-        }
-        
-        // Feet
-        this.ctx.fillStyle = '#654321'; // Brown shoes
+        // Metal boots
+        this.ctx.fillStyle = COLORS.ARMOR_DARK;
         if (facing === 'right' || facing === 'left') {
-            this.ctx.fillRect(x - 4 + legOffset, bodyY + bodyHeight/2 + 7, 4, 2);
-            this.ctx.fillRect(x - legOffset, bodyY + bodyHeight/2 + 7, 4, 2);
+            this.ctx.fillRect(x - 4 + legOffset, bodyY + bodyHeight/2 + 7, 5, 3);
+            this.ctx.fillRect(x - 1 - legOffset, bodyY + bodyHeight/2 + 7, 5, 3);
         } else {
-            this.ctx.fillRect(x - 3 + legOffset, bodyY + bodyHeight/2 + 7, 3, 2);
-            this.ctx.fillRect(x - legOffset, bodyY + bodyHeight/2 + 7, 3, 2);
+            this.ctx.fillRect(x - 3 + legOffset, bodyY + bodyHeight/2 + 7, 4, 3);
+            this.ctx.fillRect(x - 1 - legOffset, bodyY + bodyHeight/2 + 7, 4, 3);
+        }
+        
+        // Boot highlights
+        this.ctx.fillStyle = COLORS.ARMOR_BASE;
+        if (facing === 'right' || facing === 'left') {
+            this.ctx.fillRect(x - 3 + legOffset, bodyY + bodyHeight/2 + 7, 1, 2);
+            this.ctx.fillRect(x - legOffset, bodyY + bodyHeight/2 + 7, 1, 2);
+        } else {
+            this.ctx.fillRect(x - 2 + legOffset, bodyY + bodyHeight/2 + 7, 1, 2);
+            this.ctx.fillRect(x - legOffset, bodyY + bodyHeight/2 + 7, 1, 2);
         }
     }
     

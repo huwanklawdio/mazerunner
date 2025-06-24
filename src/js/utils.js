@@ -59,21 +59,39 @@ const KEYS = {
     SPACE: ' '
 };
 
-// Colors for pixel art style
+// Colors for dungeon theme
 const COLORS = {
-    WALL: '#2d2d2d',
-    WALL_DARK: '#1a1a1a',
-    WALL_LIGHT: '#404040',
-    FLOOR: '#f0f0f0',
-    FLOOR_DARK: '#e0e0e0',
-    PLAYER: '#4a90e2',
-    PLAYER_OUTLINE: '#ffffff',
+    // Stone wall colors
+    WALL: '#4a4a4a',
+    WALL_DARK: '#2d2d2d',
+    WALL_LIGHT: '#666666',
+    WALL_MOSS: '#5a7c5a',
+    
+    // Floor colors
+    FLOOR: '#8b7355',
+    FLOOR_DARK: '#6b5d4f',
+    FLOOR_LIGHT: '#9b8365',
+    
+    // Knight colors
+    ARMOR_BASE: '#c0c0c0',
+    ARMOR_DARK: '#8b8b8b',
+    ARMOR_LIGHT: '#e8e8e8',
+    ARMOR_ACCENT: '#ffd700',
+    
+    // Game elements
     START: '#5cb85c',
     START_GLOW: '#7dd87d',
-    END: '#d9534f',
-    END_GLOW: '#ff6b6b',
+    END: '#ffd700',
+    END_GLOW: '#ffed4e',
+    
+    // Torch/Fire colors
+    FIRE_CORE: '#fff2cc',
+    FIRE_MID: '#ff9500',
+    FIRE_OUTER: '#ff6b00',
+    
+    // UI colors
     COMPASS_BG: 'rgba(0, 0, 0, 0.8)',
-    COMPASS_BORDER: '#ffffff'
+    COMPASS_BORDER: '#daa520'
 };
 
 // Utility functions
