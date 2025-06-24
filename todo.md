@@ -104,6 +104,23 @@
   - [x] Emergency fix: Resolve pressure plates appearing on walls bug
   - [x] Add validation checkpoints throughout maze generation
   - [x] Create emergency test suite for critical bug validation
+  - [x] Steps 2 & 3: Complete all 6 root causes fix for pressure plate wall placement
+- [x] Fix notification system positioning and user experience issues
+  - [x] Reposition notifications to top-right corner (avoid covering minimap/game area)
+  - [x] Optimize notification queue processing to reduce lag with requestAnimationFrame
+  - [x] Reduce notification size and improve mobile responsiveness
+  - [x] Maintain medieval parchment theme while improving usability
+  - [x] Update animations for right-side slide-in effects
+  - [x] Add automatic notification cleanup on game completion and restart
+  - [x] Reduce notification durations for faster gameplay (2-3s instead of 3-5s)
+  - [x] Implement priority queue for immediate display of completion notifications
+  - [x] Optimize animation timing from 300ms to 100ms for smoother transitions
+- [ ] Add idle breathing animation to player character
+  - [ ] Add idleTime property and animation parameters to Player class
+  - [ ] Modify player update logic for smooth breathing when stationary
+  - [ ] Enhance getRenderPosition() with Math.sin() breathing offset
+  - [ ] Use subtle amplitude (1.5px) and slower frequency than keys
+  - [ ] Maintain compatibility with existing sprite animation system
 - [ ] Implement power-up system (speed boost, torch vision, etc.)
 - [ ] Add multi-level progression system
 - [ ] Create mirror puzzles with light beam reflection mechanics

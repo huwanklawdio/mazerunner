@@ -296,10 +296,14 @@ class Game {
             // Check win condition
             if (this.player.x === this.maze.endX && this.player.y === this.maze.endY) {
                 this.state = 'won';
+                
+                // Clear any existing notifications before game completion
+                window.notificationSystem.clear();
+                
                 this.completeGame();
                 this.audio.playVictory();
                 
-                // Show level complete notification
+                // Show level complete notification with immediate priority
                 const stats = {
                     time: this.formatTime(this.currentTime),
                     steps: this.stepCount
@@ -610,6 +614,9 @@ class Game {
         
         // Clear particles
         this.particleSystem.clear();
+        
+        // Clear any lingering notifications from previous game
+        window.notificationSystem.clear();
         
         // Play game start sound
         this.audio.resume();

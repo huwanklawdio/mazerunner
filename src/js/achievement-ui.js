@@ -185,15 +185,15 @@ class AchievementUI {
             notification.classList.add('show');
         }, 100);
         
-        // Auto hide after 4 seconds
+        // Auto hide after 3 seconds
         setTimeout(() => {
             notification.classList.add('hide');
             setTimeout(() => {
                 notification.remove();
                 this.isShowingNotification = false;
                 this.processNotificationQueue(); // Process next in queue
-            }, 500);
-        }, 4000);
+            }, 300);
+        }, 3000);
         
         // Update UI elements
         this.updateAchievementButton();

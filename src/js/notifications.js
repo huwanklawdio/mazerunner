@@ -21,7 +21,7 @@ class NotificationSystem {
         const notification = {
             message,
             type: options.type || 'info', // info, success, warning, quest, treasure
-            duration: options.duration || 3000,
+            duration: options.duration || 2500, // Reduced default duration
             icon: options.icon || null,
             sound: options.sound || null,
             priority: options.priority || 0, // Higher priority shows first
@@ -43,8 +43,10 @@ class NotificationSystem {
             this.queue.push(notification);
         }
         
-        // Process queue if not already showing
-        if (!this.isShowing) {
+        // Process queue immediately for high priority notifications (15+)
+        if (notification.priority >= 15 && !this.isShowing) {
+            this.processQueue();
+        } else if (!this.isShowing) {
             this.processQueue();
         }
     }
@@ -57,7 +59,11 @@ class NotificationSystem {
         
         this.isShowing = true;
         const notification = this.queue.shift();
-        this.displayNotification(notification);
+        
+        // Reduce processing delay for smoother experience
+        requestAnimationFrame(() => {
+            this.displayNotification(notification);
+        });
     }
     
     displayNotification(notification) {
@@ -103,9 +109,11 @@ class NotificationSystem {
             window.gameAudio.playSound(notification.sound);
         }
         
-        // Trigger entrance animation
+        // Trigger entrance animation with optimized timing
         requestAnimationFrame(() => {
-            element.classList.add('show');
+            requestAnimationFrame(() => {
+                element.classList.add('show');
+            });
         });
         
         // Auto-hide after duration
@@ -117,15 +125,18 @@ class NotificationSystem {
     hideNotification(element) {
         element.classList.add('hide');
         
-        // Remove after animation completes
+        // Remove after animation completes - faster processing
         setTimeout(() => {
             if (element.parentNode) {
                 element.parentNode.removeChild(element);
             }
-            this.currentNotification = null;
-            // Process next in queue
-            this.processQueue();
-        }, 500);
+            
+            // Process next in queue immediately after removal
+            requestAnimationFrame(() => {
+                this.currentNotification = null;
+                this.processQueue();
+            });
+        }, 100);
     }
     
     // Clear all notifications
@@ -167,7 +178,7 @@ class NotificationSystem {
         this.show(`Found ${treasureName}! +${value} gold`, {
             type: 'treasure',
             icon: '💰',
-            duration: 2500,
+            duration: 2000,
             sound: 'treasure_collect'
         });
     }
@@ -182,7 +193,7 @@ class NotificationSystem {
         this.show(`${keyColor.charAt(0).toUpperCase() + keyColor.slice(1)} Key Acquired!`, {
             type: 'key',
             icon: `${colorEmojis[keyColor] || '🗝️'}`,
-            duration: 3000,
+            duration: 2000,
             sound: 'key_collect'
         });
     }
@@ -191,7 +202,7 @@ class NotificationSystem {
         this.show(`${doorColor.charAt(0).toUpperCase() + doorColor.slice(1)} door unlocked!`, {
             type: 'success',
             icon: '🚪',
-            duration: 2500,
+            duration: 1500,
             sound: 'door_unlock'
         });
     }
@@ -205,7 +216,7 @@ class NotificationSystem {
         this.show(messages[puzzleType] || 'Puzzle solved!', {
             type: 'puzzle',
             icon: '⚙️',
-            duration: 3000,
+            duration: 2000,
             sound: 'puzzle_solve'
         });
     }
@@ -214,7 +225,7 @@ class NotificationSystem {
         this.show(`Achievement Unlocked: ${achievementName}`, {
             type: 'achievement',
             icon: '🏆',
-            duration: 4000,
+            duration: 3000,
             priority: 10, // High priority
             sound: 'achievement_unlock'
         });
@@ -244,8 +255,8 @@ class NotificationSystem {
         this.show(message, {
             type: 'success',
             icon: '🏰',
-            duration: 5000,
-            priority: 10,
+            duration: 4000,
+            priority: 15, // Highest priority for immediate display
             sound: 'level_complete'
         });
     }
