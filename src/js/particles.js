@@ -171,6 +171,91 @@ class ParticleSystem {
         }
     }
     
+    // Key collection particles
+    createKeyCollection(x, y, keyColor) {
+        const particleCount = 12;
+        const colors = {
+            'red': COLORS.KEY_RED,
+            'blue': COLORS.KEY_BLUE,
+            'green': COLORS.KEY_GREEN,
+            'yellow': COLORS.KEY_YELLOW
+        };
+        const color = colors[keyColor] || COLORS.KEY_YELLOW;
+        
+        for (let i = 0; i < particleCount; i++) {
+            const angle = (Math.PI * 2 / particleCount) * i + Math.random() * 0.3;
+            const speed = 1.5 + Math.random() * 2;
+            
+            const particle = new Particle(
+                x + (Math.random() - 0.5) * 6,
+                y + (Math.random() - 0.5) * 6,
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed - 0.5, // Slight upward bias
+                600 + Math.random() * 400, // 600-1000ms life
+                color,
+                2 + Math.random() * 2
+            );
+            
+            particle.gravity = -0.02; // Float upward gently
+            particle.friction = 0.98;
+            
+            this.particles.push(particle);
+        }
+    }
+    
+    // Door unlock particles
+    createDoorUnlock(x, y, doorColor) {
+        const particleCount = 15;
+        const colors = {
+            'red': COLORS.DOOR_RED,
+            'blue': COLORS.DOOR_BLUE,
+            'green': COLORS.DOOR_GREEN,
+            'yellow': COLORS.DOOR_YELLOW
+        };
+        const color = colors[doorColor] || COLORS.DOOR_YELLOW;
+        
+        for (let i = 0; i < particleCount; i++) {
+            const angle = (Math.PI * 2 / particleCount) * i + Math.random() * 0.4;
+            const speed = 2 + Math.random() * 3;
+            
+            const particle = new Particle(
+                x + (Math.random() - 0.5) * 16,
+                y + (Math.random() - 0.5) * 16,
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed,
+                800 + Math.random() * 600, // 800-1400ms life
+                color,
+                3 + Math.random() * 3
+            );
+            
+            particle.gravity = 0.1; // Fall down
+            particle.friction = 0.95;
+            
+            this.particles.push(particle);
+        }
+        
+        // Add some sparkle particles
+        for (let i = 0; i < 8; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 1 + Math.random() * 2;
+            
+            const particle = new Particle(
+                x,
+                y,
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed,
+                400 + Math.random() * 300,
+                COLORS.KEY_GLOW,
+                1 + Math.random() * 2
+            );
+            
+            particle.gravity = 0;
+            particle.friction = 0.99;
+            
+            this.particles.push(particle);
+        }
+    }
+    
     // Portal effect for start/end positions
     createPortalEffect(x, y, color) {
         const angle = Math.random() * Math.PI * 2;

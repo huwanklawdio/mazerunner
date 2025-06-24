@@ -124,6 +124,37 @@ class AudioSystem {
         }, 100);
     }
     
+    // Play key collection sound
+    playKeyCollect() {
+        if (!this.enabled) return;
+        
+        // Bright, sparkly sound
+        this.playTone(587.33, 0.15, 'triangle', 0.3); // D5
+        setTimeout(() => {
+            this.playTone(739.99, 0.15, 'triangle', 0.25); // F#5
+        }, 40);
+        setTimeout(() => {
+            this.playTone(880.00, 0.2, 'sine', 0.2); // A5
+        }, 80);
+    }
+    
+    // Play door unlock sound
+    playDoorUnlock() {
+        if (!this.enabled) return;
+        
+        // Mechanical unlock sound with magical sparkle
+        this.playTone(220, 0.1, 'square', 0.4); // Click
+        setTimeout(() => {
+            this.playTone(180, 0.15, 'sawtooth', 0.3); // Mechanical
+        }, 50);
+        setTimeout(() => {
+            this.playTone(659.25, 0.2, 'triangle', 0.25); // Magical chime
+        }, 150);
+        setTimeout(() => {
+            this.playTone(830.61, 0.3, 'sine', 0.2); // Success tone
+        }, 250);
+    }
+    
     // Create white noise for ambient effects
     playWhiteNoise(duration, volume = 0.05) {
         if (!this.enabled || !this.audioContext) return;

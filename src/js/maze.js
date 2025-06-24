@@ -6,6 +6,8 @@ class Maze {
         this.grid = [];
         this.torches = []; // Array of torch positions {x, y, side}
         this.treasures = []; // Array of treasure positions {x, y, type, collected}
+        this.keys = []; // Array of key positions {x, y, color, collected}
+        this.doors = []; // Array of door positions {x, y, color, unlocked}
         this.startX = 1;
         this.startY = 1;
         this.endX = width - 2;
@@ -72,6 +74,12 @@ class Maze {
         
         // Place treasures in accessible locations
         this.placeTreasures();
+        
+        // Place keys and doors strategically
+        this.placeKeysAndDoors();
+        
+        // Ensure the puzzle is solvable
+        this.ensureSolvability();
     }
     
     getUnvisitedNeighbors(x, y) {
@@ -209,6 +217,13 @@ class Maze {
         if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
             return true; // Out of bounds is considered a wall
         }
+        
+        // Check for locked doors (act as walls)
+        const door = this.getDoorAt(x, y);
+        if (door && !door.unlocked) {
+            return true;
+        }
+        
         return this.grid[y][x] === 1;
     }
     
@@ -317,5 +332,330 @@ class Maze {
             return treasure;
         }
         return null;
+    }
+    
+    placeKeysAndDoors() {
+        this.keys = [];
+        this.doors = [];
+        
+        const keyColors = ['red', 'blue', 'green', 'yellow'];
+        const maxKeyDoorPairs = Math.min(3, Math.floor(this.width * this.height / 200)); // Scale with maze size
+        const numPairs = Math.max(1, maxKeyDoorPairs); // At least 1 pair
+        
+        // Get all floor tiles for key placement
+        const floorTiles = [];
+        for (let y = 1; y < this.height - 1; y++) {
+            for (let x = 1; x < this.width - 1; x++) {
+                if (this.grid[y][x] === 0) {
+                    floorTiles.push({ x, y });
+                }
+            }
+        }
+        
+        // Get potential door locations (floor tiles that could block passages)
+        const potentialDoorLocations = this.findStrategicDoorLocations();
+        
+        for (let i = 0; i < numPairs && potentialDoorLocations.length > 0; i++) {
+            const color = keyColors[i % keyColors.length];
+            
+            // Place door first (more strategic)
+            const doorIndex = Math.floor(Math.random() * potentialDoorLocations.length);
+            const doorLocation = potentialDoorLocations[doorIndex];
+            
+            this.doors.push({
+                x: doorLocation.x,
+                y: doorLocation.y,
+                color: color,
+                unlocked: false
+            });
+            
+            // Remove this location and nearby ones to avoid clustering
+            potentialDoorLocations.splice(doorIndex, 1);
+            this.removeNearbyLocations(potentialDoorLocations, doorLocation, 5);
+            
+            // Place corresponding key
+            const availableKeySpots = floorTiles.filter(tile => {
+                const distanceFromStart = Math.abs(tile.x - this.startX) + Math.abs(tile.y - this.startY);
+                const distanceFromEnd = Math.abs(tile.x - this.endX) + Math.abs(tile.y - this.endY);
+                const distanceFromDoor = Math.abs(tile.x - doorLocation.x) + Math.abs(tile.y - doorLocation.y);
+                
+                return distanceFromStart >= 3 && distanceFromEnd >= 5 && 
+                       distanceFromDoor >= 8 && !this.hasKeyAt(tile.x, tile.y);
+            });
+            
+            if (availableKeySpots.length > 0) {
+                const keySpot = availableKeySpots[Math.floor(Math.random() * availableKeySpots.length)];
+                this.keys.push({
+                    x: keySpot.x,
+                    y: keySpot.y,
+                    color: color,
+                    collected: false
+                });
+            }
+        }
+    }
+    
+    findStrategicDoorLocations() {
+        const locations = [];
+        
+        // Look for narrow passages and corridor intersections
+        for (let y = 2; y < this.height - 2; y++) {
+            for (let x = 2; x < this.width - 2; x++) {
+                if (this.grid[y][x] === 0) { // Floor tile
+                    // Check if this is a strategic chokepoint
+                    if (this.isChokepoint(x, y) || this.isCorridorTile(x, y)) {
+                        const distanceFromStart = Math.abs(x - this.startX) + Math.abs(y - this.startY);
+                        const distanceFromEnd = Math.abs(x - this.endX) + Math.abs(y - this.endY);
+                        
+                        // Avoid placing doors too close to start/end
+                        if (distanceFromStart >= 5 && distanceFromEnd >= 5) {
+                            locations.push({ x, y });
+                        }
+                    }
+                }
+            }
+        }
+        
+        return locations;
+    }
+    
+    isChokepoint(x, y) {
+        // A chokepoint has limited ways to get around it
+        const directions = [
+            { x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 }
+        ];
+        
+        let openDirections = 0;
+        for (const dir of directions) {
+            if (this.grid[y + dir.y] && this.grid[y + dir.y][x + dir.x] === 0) {
+                openDirections++;
+            }
+        }
+        
+        return openDirections === 2; // Corridor tile
+    }
+    
+    isCorridorTile(x, y) {
+        // Check if this tile is part of a main corridor
+        const horizontal = this.grid[y][x - 1] === 0 && this.grid[y][x + 1] === 0;
+        const vertical = this.grid[y - 1][x] === 0 && this.grid[y + 1][x] === 0;
+        
+        return horizontal || vertical;
+    }
+    
+    removeNearbyLocations(locations, center, minDistance) {
+        for (let i = locations.length - 1; i >= 0; i--) {
+            const location = locations[i];
+            const distance = Math.abs(location.x - center.x) + Math.abs(location.y - center.y);
+            if (distance < minDistance) {
+                locations.splice(i, 1);
+            }
+        }
+    }
+    
+    hasKeyAt(x, y) {
+        return this.keys.some(key => key.x === x && key.y === y && !key.collected);
+    }
+    
+    getKeyAt(x, y) {
+        return this.keys.find(key => key.x === x && key.y === y && !key.collected);
+    }
+    
+    getDoorAt(x, y) {
+        return this.doors.find(door => door.x === x && door.y === y);
+    }
+    
+    collectKey(x, y) {
+        const key = this.getKeyAt(x, y);
+        if (key) {
+            key.collected = true;
+            return key;
+        }
+        return null;
+    }
+    
+    unlockDoor(x, y, keyColor) {
+        const door = this.getDoorAt(x, y);
+        if (door && door.color === keyColor && !door.unlocked) {
+            door.unlocked = true;
+            return door;
+        }
+        return null;
+    }
+    
+    tryUnlockDoor(x, y, playerKeys) {
+        const door = this.getDoorAt(x, y);
+        if (door && !door.unlocked && playerKeys.includes(door.color)) {
+            door.unlocked = true;
+            return door;
+        }
+        return null;
+    }
+    
+    ensureSolvability() {
+        let attempts = 0;
+        const maxAttempts = 10;
+        
+        while (attempts < maxAttempts) {
+            if (this.isPuzzleSolvable()) {
+                console.log(`Key-door puzzle solvable after ${attempts + 1} attempt(s)`);
+                return true;
+            }
+            
+            // Regenerate keys and doors
+            console.log(`Attempt ${attempts + 1}: Puzzle not solvable, regenerating...`);
+            this.placeKeysAndDoors();
+            attempts++;
+        }
+        
+        // If we can't create a solvable puzzle, remove all keys and doors
+        console.warn('Could not generate solvable key-door puzzle, removing all keys and doors');
+        this.keys = [];
+        this.doors = [];
+        return false;
+    }
+    
+    isPuzzleSolvable() {
+        // Check if all keys are reachable and end is reachable with all keys
+        const reachableStates = this.getAllReachableStates();
+        
+        // Check if we can reach the end with all keys
+        const allKeyColors = [...new Set(this.keys.map(k => k.color))];
+        const endState = this.findStateWithKeys(reachableStates, allKeyColors);
+        
+        if (!endState) return false;
+        
+        // Check if end position is reachable in that state
+        return endState.reachablePositions.has(`${this.endX},${this.endY}`);
+    }
+    
+    getAllReachableStates() {
+        // State = { keys: Set of key colors, reachablePositions: Set of "x,y" strings }
+        const visited = new Map(); // Map of key combinations to reachable positions
+        const queue = [];
+        
+        // Initial state: no keys, reachable from start
+        const initialKeys = new Set();
+        const initialReachable = this.getReachablePositions(this.startX, this.startY, initialKeys);
+        const initialState = {
+            keys: initialKeys,
+            reachablePositions: initialReachable
+        };
+        
+        queue.push(initialState);
+        visited.set(this.keysToString(initialKeys), initialReachable);
+        
+        while (queue.length > 0) {
+            const currentState = queue.shift();
+            
+            // Find all keys reachable in current state
+            const newKeys = this.findReachableKeys(currentState);
+            
+            for (const newKey of newKeys) {
+                const newKeySet = new Set([...currentState.keys, newKey]);
+                const keyString = this.keysToString(newKeySet);
+                
+                if (!visited.has(keyString)) {
+                    // Calculate new reachable positions with this key set
+                    const newReachable = this.getReachablePositions(this.startX, this.startY, newKeySet);
+                    const newState = {
+                        keys: newKeySet,
+                        reachablePositions: newReachable
+                    };
+                    
+                    visited.set(keyString, newReachable);
+                    queue.push(newState);
+                }
+            }
+        }
+        
+        // Convert visited map to array of states
+        const states = [];
+        for (const [keyString, positions] of visited.entries()) {
+            const keys = this.stringToKeys(keyString);
+            states.push({ keys, reachablePositions: positions });
+        }
+        
+        return states;
+    }
+    
+    getReachablePositions(startX, startY, availableKeys) {
+        const visited = new Set();
+        const queue = [{ x: startX, y: startY }];
+        visited.add(`${startX},${startY}`);
+        
+        while (queue.length > 0) {
+            const { x, y } = queue.shift();
+            
+            // Check all four directions
+            const directions = [
+                { x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 }
+            ];
+            
+            for (const dir of directions) {
+                const newX = x + dir.x;
+                const newY = y + dir.y;
+                const posKey = `${newX},${newY}`;
+                
+                if (visited.has(posKey)) continue;
+                if (newX < 0 || newX >= this.width || newY < 0 || newY >= this.height) continue;
+                
+                // Check if position is accessible
+                if (this.isPositionAccessible(newX, newY, availableKeys)) {
+                    visited.add(posKey);
+                    queue.push({ x: newX, y: newY });
+                }
+            }
+        }
+        
+        return visited;
+    }
+    
+    isPositionAccessible(x, y, availableKeys) {
+        // Check if it's a wall
+        if (this.grid[y][x] === 1) return false;
+        
+        // Check if there's a door
+        const door = this.getDoorAt(x, y);
+        if (door) {
+            // Door is accessible if we have the key or it's already unlocked
+            return door.unlocked || availableKeys.has(door.color);
+        }
+        
+        return true; // Floor tile
+    }
+    
+    findReachableKeys(state) {
+        const reachableKeys = [];
+        
+        for (const key of this.keys) {
+            if (key.collected || state.keys.has(key.color)) continue;
+            
+            const keyPos = `${key.x},${key.y}`;
+            if (state.reachablePositions.has(keyPos)) {
+                reachableKeys.push(key.color);
+            }
+        }
+        
+        return reachableKeys;
+    }
+    
+    findStateWithKeys(states, requiredKeys) {
+        for (const state of states) {
+            const hasAllKeys = requiredKeys.every(key => state.keys.has(key));
+            if (hasAllKeys) {
+                return state;
+            }
+        }
+        return null;
+    }
+    
+    keysToString(keySet) {
+        return Array.from(keySet).sort().join(',');
+    }
+    
+    stringToKeys(keyString) {
+        if (!keyString) return new Set();
+        return new Set(keyString.split(','));
     }
 }

@@ -18,6 +18,7 @@ class Game {
         this.currentTime = 0;
         this.stepCount = 0;
         this.treasureScore = 0;
+        this.collectedKeys = []; // Array of collected key colors
         this.stats = this.loadStats();
         
         // Achievement tracking
@@ -385,16 +386,41 @@ class Game {
                         direction
                     );
                 } else {
-                    this.audio.playWallCollision();
-                    this.wallCollisions++;
+                    // Check if collision was with a door that can be unlocked
+                    let newX = this.player.x;
+                    let newY = this.player.y;
                     
-                    // Create wall collision particles
-                    const playerPos = this.player.getRenderPosition();
-                    this.particleSystem.createWallCollision(
-                        playerPos.x * TILE_SIZE + TILE_SIZE / 2,
-                        playerPos.y * TILE_SIZE + TILE_SIZE / 2,
-                        direction
-                    );
+                    if (direction === 'up') newY--;
+                    else if (direction === 'down') newY++;
+                    else if (direction === 'left') newX--;
+                    else if (direction === 'right') newX++;
+                    
+                    const door = this.maze.getDoorAt(newX, newY);
+                    if (door && !door.unlocked && this.collectedKeys.includes(door.color)) {
+                        // Unlock the door
+                        door.unlocked = true;
+                        
+                        // Create door unlock particles
+                        this.particleSystem.createDoorUnlock(
+                            newX * TILE_SIZE + TILE_SIZE / 2,
+                            newY * TILE_SIZE + TILE_SIZE / 2,
+                            door.color
+                        );
+                        
+                        // Play door unlock sound
+                        this.audio.playDoorUnlock();
+                    } else {
+                        this.audio.playWallCollision();
+                        this.wallCollisions++;
+                        
+                        // Create wall collision particles
+                        const playerPos = this.player.getRenderPosition();
+                        this.particleSystem.createWallCollision(
+                            playerPos.x * TILE_SIZE + TILE_SIZE / 2,
+                            playerPos.y * TILE_SIZE + TILE_SIZE / 2,
+                            direction
+                        );
+                    }
                 }
             }
         }
@@ -430,10 +456,12 @@ class Game {
         this.currentTime = 0;
         this.stepCount = 0;
         this.treasureScore = 0;
+        this.collectedKeys = [];
         this.wallCollisions = 0;
         this.updateTimerDisplay();
         this.updateStepsDisplay();
         this.updateTreasureDisplay();
+        this.updateKeyDisplay();
         
         // Reset mini-map
         this.miniMap.reset();
@@ -525,6 +553,27 @@ class Game {
         }
     }
     
+    updateKeyDisplay() {
+        const keyElement = document.getElementById('keys');
+        if (keyElement) {
+            if (this.collectedKeys.length === 0) {
+                keyElement.textContent = 'None';
+            } else {
+                // Show colored key icons
+                const keyIcons = this.collectedKeys.map(color => {
+                    const colorEmojis = {
+                        'red': '🔴',
+                        'blue': '🔵', 
+                        'green': '🟢',
+                        'yellow': '🟡'
+                    };
+                    return colorEmojis[color] || '🔑';
+                }).join(' ');
+                keyElement.innerHTML = keyIcons;
+            }
+        }
+    }
+    
     checkTreasureCollection() {
         // Use actual player grid position, not render position
         const treasure = this.maze.collectTreasure(this.player.x, this.player.y);
@@ -542,6 +591,23 @@ class Game {
             
             // Play treasure collection sound
             this.audio.playTreasureCollect();
+        }
+        
+        // Check for key collection
+        const key = this.maze.collectKey(this.player.x, this.player.y);
+        if (key) {
+            this.collectedKeys.push(key.color);
+            this.updateKeyDisplay();
+            
+            // Create key collection particles
+            this.particleSystem.createKeyCollection(
+                this.player.x * TILE_SIZE + TILE_SIZE / 2,
+                this.player.y * TILE_SIZE + TILE_SIZE / 2,
+                key.color
+            );
+            
+            // Play key collection sound
+            this.audio.playKeyCollect();
         }
     }
     

@@ -19,6 +19,10 @@ class Renderer {
         // Render treasures
         this.renderTreasures(maze, camera);
         
+        // Render keys and doors
+        this.renderKeys(maze, camera);
+        this.renderDoors(maze, camera);
+        
         // Render player
         this.renderPlayer(player, camera);
         
@@ -397,6 +401,152 @@ class Renderer {
             ctx.arc(sparkleX, sparkleY, 1, 0, Math.PI * 2);
             ctx.fill();
         }
+    }
+    
+    renderKeys(maze, camera) {
+        const time = Date.now() / 1000;
+        
+        for (const key of maze.keys) {
+            if (key.collected) continue;
+            
+            const worldX = key.x * TILE_SIZE;
+            const worldY = key.y * TILE_SIZE;
+            const screenPos = camera.worldToScreen(worldX, worldY);
+            
+            // Only render if key is visible on screen
+            if (screenPos.x < -TILE_SIZE || screenPos.x > camera.viewWidth ||
+                screenPos.y < -TILE_SIZE || screenPos.y > camera.viewHeight) {
+                continue;
+            }
+            
+            this.drawKey(screenPos.x, screenPos.y, key.color, time);
+        }
+    }
+    
+    renderDoors(maze, camera) {
+        for (const door of maze.doors) {
+            const worldX = door.x * TILE_SIZE;
+            const worldY = door.y * TILE_SIZE;
+            const screenPos = camera.worldToScreen(worldX, worldY);
+            
+            // Only render if door is visible on screen
+            if (screenPos.x < -TILE_SIZE || screenPos.x > camera.viewWidth ||
+                screenPos.y < -TILE_SIZE || screenPos.y > camera.viewHeight) {
+                continue;
+            }
+            
+            this.drawDoor(screenPos.x, screenPos.y, door.color, door.unlocked);
+        }
+    }
+    
+    drawKey(x, y, color, time) {
+        const ctx = this.ctx;
+        const centerX = x + TILE_SIZE / 2;
+        const centerY = y + TILE_SIZE / 2;
+        
+        // Bobbing animation
+        const bobOffset = Math.sin(time * 3) * 2;
+        const adjustedY = centerY + bobOffset;
+        
+        // Glow effect
+        const glowIntensity = 0.4 + 0.3 * Math.sin(time * 4);
+        ctx.fillStyle = `rgba(255, 255, 255, ${glowIntensity * 0.4})`;
+        ctx.beginPath();
+        ctx.arc(centerX, adjustedY, 10, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Get key color
+        const keyColor = this.getKeyColor(color);
+        
+        // Key body (circular part)
+        ctx.fillStyle = keyColor;
+        ctx.beginPath();
+        ctx.arc(centerX - 2, adjustedY, 4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Key stem
+        ctx.fillStyle = keyColor;
+        ctx.fillRect(centerX + 2, adjustedY - 1, 6, 2);
+        
+        // Key teeth
+        ctx.fillRect(centerX + 6, adjustedY - 3, 2, 2);
+        ctx.fillRect(centerX + 8, adjustedY + 1, 2, 2);
+        
+        // Key highlight
+        ctx.fillStyle = COLORS.KEY_GLOW;
+        ctx.beginPath();
+        ctx.arc(centerX - 3, adjustedY - 1, 1, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    
+    drawDoor(x, y, color, unlocked) {
+        const ctx = this.ctx;
+        
+        if (unlocked) {
+            // Draw unlocked door as open doorway with frame
+            ctx.fillStyle = COLORS.DOOR_FRAME;
+            ctx.fillRect(x, y, 4, TILE_SIZE);
+            ctx.fillRect(x + TILE_SIZE - 4, y, 4, TILE_SIZE);
+            ctx.fillRect(x, y, TILE_SIZE, 4);
+            ctx.fillRect(x, y + TILE_SIZE - 4, TILE_SIZE, 4);
+        } else {
+            // Draw locked door
+            const doorColor = this.getDoorColor(color);
+            
+            // Door background
+            ctx.fillStyle = doorColor;
+            ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+            
+            // Door frame
+            ctx.fillStyle = COLORS.DOOR_FRAME;
+            ctx.fillRect(x, y, TILE_SIZE, 4);
+            ctx.fillRect(x, y + TILE_SIZE - 4, TILE_SIZE, 4);
+            ctx.fillRect(x, y, 4, TILE_SIZE);
+            ctx.fillRect(x + TILE_SIZE - 4, y, 4, TILE_SIZE);
+            
+            // Door panels
+            ctx.fillStyle = this.getDoorColor(color + '_dark');
+            ctx.fillRect(x + 6, y + 6, 8, 10);
+            ctx.fillRect(x + 18, y + 6, 8, 10);
+            ctx.fillRect(x + 6, y + 18, 8, 10);
+            ctx.fillRect(x + 18, y + 18, 8, 10);
+            
+            // Door handle
+            ctx.fillStyle = '#888';
+            ctx.beginPath();
+            ctx.arc(x + TILE_SIZE - 8, y + TILE_SIZE / 2, 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Lock indicator (small keyhole)
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(x + TILE_SIZE / 2, y + TILE_SIZE / 2 + 2, 1, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    
+    getKeyColor(color) {
+        const colors = {
+            'red': COLORS.KEY_RED,
+            'blue': COLORS.KEY_BLUE,
+            'green': COLORS.KEY_GREEN,
+            'yellow': COLORS.KEY_YELLOW
+        };
+        return colors[color] || COLORS.KEY_YELLOW;
+    }
+    
+    getDoorColor(color) {
+        const colors = {
+            'red': COLORS.DOOR_RED,
+            'blue': COLORS.DOOR_BLUE,
+            'green': COLORS.DOOR_GREEN,
+            'yellow': COLORS.DOOR_YELLOW,
+            'red_dark': '#5a0000',
+            'blue_dark': '#0c0c47',
+            'green_dark': '#003200',
+            'yellow_dark': '#8b7500'
+        };
+        return colors[color] || COLORS.DOOR_YELLOW;
     }
     
     renderPlayer(player, camera) {

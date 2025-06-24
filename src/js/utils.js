@@ -101,7 +101,19 @@ const COLORS = {
     TREASURE_GEM_BLUE: '#4169e1',
     TREASURE_GEM_GREEN: '#32cd32',
     TREASURE_CHEST: '#8b4513',
-    TREASURE_GLOW: '#ffed4e'
+    TREASURE_GLOW: '#ffed4e',
+    
+    // Key and Door colors
+    KEY_RED: '#dc143c',
+    KEY_BLUE: '#4169e1',
+    KEY_GREEN: '#32cd32',
+    KEY_YELLOW: '#ffd700',
+    DOOR_RED: '#8b0000',
+    DOOR_BLUE: '#191970',
+    DOOR_GREEN: '#006400',
+    DOOR_YELLOW: '#b8860b',
+    KEY_GLOW: '#ffffff',
+    DOOR_FRAME: '#654321'
 };
 
 // Utility functions
