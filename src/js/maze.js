@@ -100,9 +100,16 @@ class Maze {
         
         // Build spatial hash maps for performance
         this.buildSpatialMaps();
+        
+        // EMERGENCY FIX: Final validation of all pressure plate positions
+        this.validatePressurePlatePositions();
+        console.log('✅ Maze generation completed with pressure plate validation');
     }
     
     buildSpatialMaps() {
+        // EMERGENCY FIX: Validate pressure plates before building maps
+        this.validatePressurePlatePositions();
+        
         // Clear existing maps
         this.doorMap.clear();
         this.treasureMap.clear();
@@ -127,6 +134,7 @@ class Maze {
             }
         }
         
+        // Build pressure plate map (already validated above)
         for (const plate of this.pressurePlates) {
             this.pressurePlateMap.set(`${plate.x},${plate.y}`, plate);
         }
@@ -858,9 +866,15 @@ class Maze {
             if (this.isPuzzleSolvable()) {
                 console.log(`Solvable puzzle found after ${attempts + 1} attempts`);
                 
+                // EMERGENCY FIX: Validate pressure plates before Phase 2
+                this.validatePressurePlatePositions();
+                
                 // PHASE 2: Attempt to add redundant paths for extra solvability
                 if (this.shouldAddRedundantPaths() && attempts < 5) {
                     this.addRedundantSolutionPaths();
+                    
+                    // EMERGENCY FIX: Validate after adding redundant paths
+                    this.validatePressurePlatePositions();
                     
                     // Verify redundant paths maintain solvability
                     if (this.validateMultipleSolutionPaths()) {
@@ -868,6 +882,8 @@ class Maze {
                     } else {
                         console.warn('Redundant paths broke solvability - reverting');
                         this.revertToSinglePath();
+                        // EMERGENCY FIX: Validate after reversion
+                        this.validatePressurePlatePositions();
                     }
                 }
                 
@@ -879,6 +895,8 @@ class Maze {
                 this.placeKeysAndDoors();
             } else if (attempts < 4) {
                 this.simplifyEnvironmentalPuzzles();
+                // EMERGENCY FIX: Validate after puzzle simplification
+                this.validatePressurePlatePositions();
                 this.placeKeysAndDoors();
             } else if (attempts < 8) {
                 this.removeAllPuzzleElements();
@@ -891,12 +909,16 @@ class Maze {
             }
             
             this.buildKeysAndDoorsMaps();
+            // EMERGENCY FIX: Validate after each solvability attempt
+            this.validatePressurePlatePositions();
             attempts++;
         }
         
         // Final fallback: completely clean maze with guaranteed connectivity
         this.removeAllPuzzleElements();
         this.buildSpatialMaps();
+        // EMERGENCY FIX: Validate after final cleanup
+        this.validatePressurePlatePositions();
         
         const finalCheck = this.isPuzzleSolvable();
         const basicCheck = this.isBasicallyReachable();
@@ -1546,6 +1568,9 @@ class Maze {
         this.grid[this.endY][this.endX] = 0;
         
         console.log(`Guaranteed path created from (${this.startX},${this.startY}) to (${this.endX},${this.endY})`);
+        
+        // EMERGENCY FIX: Validate pressure plates after creating guaranteed path
+        this.validatePressurePlatePositions();
     }
     
     // Find a lever location that doesn't conflict with existing puzzles
@@ -1793,6 +1818,33 @@ class Maze {
         
         for (const lever of this.levers) {
             this.leverMap.set(`${lever.x},${lever.y}`, lever);
+        }
+    }
+    
+    // EMERGENCY FIX: Pressure Plate Position Validation
+    
+    validatePressurePlatePositions() {
+        const originalCount = this.pressurePlates.length;
+        
+        // Remove any pressure plates that are now on walls
+        this.pressurePlates = this.pressurePlates.filter(plate => {
+            if (this.grid[plate.y][plate.x] !== 0) {
+                console.warn(`🚨 EMERGENCY FIX: Removing pressure plate at (${plate.x},${plate.y}) - found inside wall`);
+                return false;
+            }
+            return true;
+        });
+        
+        // Log validation results
+        const removedCount = originalCount - this.pressurePlates.length;
+        if (removedCount > 0) {
+            console.warn(`🛠️ Validation removed ${removedCount} pressure plate(s) from walls`);
+        }
+        
+        // Rebuild pressure plate spatial map after removal
+        this.pressurePlateMap.clear();
+        for (const plate of this.pressurePlates) {
+            this.pressurePlateMap.set(`${plate.x},${plate.y}`, plate);
         }
     }
     

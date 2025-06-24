@@ -123,6 +123,7 @@
     
     <div class="test-controls">
         <button id="runCriticalTests" class="test-button" style="background: #dc3545;">🚨 Critical Tests (Run First)</button>
+        <button id="runEmergencyTest" class="test-button" style="background: #ff6b35;">🚨 EMERGENCY: Pressure Plate Fix</button>
         <button id="runAllTests" class="test-button">🚀 Run All Tests</button>
         <button id="runSpatialTests" class="test-button">🔍 Spatial Hashing Only</button>
         <button id="runParticleTests" class="test-button">🎆 Particle System Only</button>
@@ -168,6 +169,7 @@ Click "Run All Tests" to begin comprehensive validation...
     <script src="notification-tests.js"></script>
     <script src="solvability-tests.js"></script>
     <script src="phase2-multipath-tests.js"></script>
+    <script src="emergency-pressure-plate-fix-test.js"></script>
     
     <script>
         // Test runner UI controller
@@ -188,6 +190,10 @@ Click "Run All Tests" to begin comprehensive validation...
             setupUI() {
                 document.getElementById('runCriticalTests').addEventListener('click', () => {
                     this.runCriticalTests();
+                });
+                
+                document.getElementById('runEmergencyTest').addEventListener('click', () => {
+                    this.runEmergencyTest();
                 });
                 
                 document.getElementById('runAllTests').addEventListener('click', () => {
@@ -356,6 +362,34 @@ Click "Run All Tests" to begin comprehensive validation...
                     this.updateProgressBar(100);
                 } catch (error) {
                     this.setStatus('Critical tests crashed', 'failed');
+                    this.appendToConsole(`CRITICAL ERROR: ${error.message}`);
+                } finally {
+                    this.enableButtons();
+                }
+            }
+            
+            async runEmergencyTest() {
+                try {
+                    this.disableButtons();
+                    this.clearConsole();
+                    this.setStatus('🚨 Running EMERGENCY pressure plate fix test...', 'running');
+                    this.currentProgress = 0;
+                    
+                    const emergencyTest = new EmergencyPressurePlateFixTest();
+                    await emergencyTest.runEmergencyTest();
+                    
+                    const hasErrors = emergencyTest.errors.length > 0;
+                    const hasFailures = emergencyTest.testResults.some(t => t.status === 'FAIL');
+                    
+                    if (hasErrors || hasFailures) {
+                        this.setStatus('🔴 EMERGENCY FIX FAILED - CRITICAL BUGS REMAIN', 'failed');
+                    } else {
+                        this.setStatus('🟢 EMERGENCY FIX SUCCESSFUL - PRESSURE PLATES FIXED!', 'passed');
+                    }
+                    
+                    this.updateProgressBar(100);
+                } catch (error) {
+                    this.setStatus('🔴 Emergency test crashed', 'failed');
                     this.appendToConsole(`CRITICAL ERROR: ${error.message}`);
                 } finally {
                     this.enableButtons();
