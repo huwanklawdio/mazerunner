@@ -46,6 +46,13 @@
 - [x] Add timer and score tracking system
 - [x] Add mini-map with exploration tracking
 - [x] Redesign mini-map to circular retro gaming radar (static, no rotation)
+- [x] Transform game to medieval dungeon theme with knight character
+- [x] Implement particle effects system
+- [x] Add wall collision particles (stone debris)
+- [x] Add footstep dust particles
+- [x] Add victory celebration effects (gold sparkles)
+- [x] Add portal effects for start/end positions
+- [ ] Add torch flame particles for dungeon atmosphere
 - [ ] Optimize performance
 
 ## 📝 Notes

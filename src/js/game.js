@@ -34,6 +34,7 @@ class Game {
         this.miniMap = null;
         this.achievementSystem = null;
         this.achievementUI = null;
+        this.particleSystem = null;
         
         // Input handling
         this.keys = {};
@@ -60,6 +61,9 @@ class Game {
         // Initialize achievement system
         this.achievementSystem = new AchievementSystem();
         this.achievementUI = new AchievementUI(this.achievementSystem);
+        
+        // Initialize particle system
+        this.particleSystem = new ParticleSystem();
         
         // Set up input handling
         this.setupInput();
@@ -213,8 +217,31 @@ class Game {
                 this.state = 'won';
                 this.completeGame();
                 this.audio.playVictory();
+                
+                // Create victory particles
+                this.particleSystem.createVictoryEffect(
+                    this.maze.endX * TILE_SIZE + TILE_SIZE / 2,
+                    this.maze.endY * TILE_SIZE + TILE_SIZE / 2
+                );
+            }
+            
+            // Create portal effects
+            if (Math.random() < 0.1) { // 10% chance per frame
+                this.particleSystem.createPortalEffect(
+                    this.maze.startX * TILE_SIZE + TILE_SIZE / 2,
+                    this.maze.startY * TILE_SIZE + TILE_SIZE / 2,
+                    COLORS.START_GLOW
+                );
+                this.particleSystem.createPortalEffect(
+                    this.maze.endX * TILE_SIZE + TILE_SIZE / 2,
+                    this.maze.endY * TILE_SIZE + TILE_SIZE / 2,
+                    COLORS.END_GLOW
+                );
             }
         }
+        
+        // Update particle system
+        this.particleSystem.update(deltaTime);
         
         // Clear key pressed flags
         this.keyPressed = {};
@@ -239,21 +266,27 @@ class Game {
             let moved = false;
             let attemptedMove = false;
             
+            let direction = null;
+            
             if (this.keyPressed['ArrowUp']) {
                 attemptedMove = true;
+                direction = 'up';
                 moved = this.player.move(0, -1, this.maze);
             } else if (this.keyPressed['ArrowDown']) {
                 attemptedMove = true;
+                direction = 'down';
                 moved = this.player.move(0, 1, this.maze);
             } else if (this.keyPressed['ArrowLeft']) {
                 attemptedMove = true;
+                direction = 'left';
                 moved = this.player.move(-1, 0, this.maze);
             } else if (this.keyPressed['ArrowRight']) {
                 attemptedMove = true;
+                direction = 'right';
                 moved = this.player.move(1, 0, this.maze);
             }
             
-            // Play sound effects
+            // Play sound effects and create particles
             if (attemptedMove) {
                 // Resume audio context on first user interaction
                 this.audio.resume();
@@ -262,9 +295,25 @@ class Game {
                     this.audio.playFootstep();
                     this.stepCount++;
                     this.updateStepsDisplay();
+                    
+                    // Create footstep dust particles
+                    const playerPos = this.player.getRenderPosition();
+                    this.particleSystem.createFootstepDust(
+                        playerPos.x * TILE_SIZE + TILE_SIZE / 2,
+                        playerPos.y * TILE_SIZE + TILE_SIZE / 2,
+                        direction
+                    );
                 } else {
                     this.audio.playWallCollision();
                     this.wallCollisions++;
+                    
+                    // Create wall collision particles
+                    const playerPos = this.player.getRenderPosition();
+                    this.particleSystem.createWallCollision(
+                        playerPos.x * TILE_SIZE + TILE_SIZE / 2,
+                        playerPos.y * TILE_SIZE + TILE_SIZE / 2,
+                        direction
+                    );
                 }
             }
         }
@@ -305,6 +354,9 @@ class Game {
         
         // Reset mini-map
         this.miniMap.reset();
+        
+        // Clear particles
+        this.particleSystem.clear();
         
         // Play game start sound
         this.audio.resume();
@@ -390,6 +442,10 @@ class Game {
         
         if (this.state !== 'start') {
             this.renderer.render(this.maze, this.player, this.camera);
+            
+            // Render particles
+            this.particleSystem.render(this.ctx, this.camera);
+            
             this.miniMap.render(this.player);
         } else {
             // Show start screen

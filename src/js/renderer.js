@@ -185,23 +185,6 @@ class Renderer {
         const centerX = screenPos.x + TILE_SIZE / 2;
         const centerY = screenPos.y + TILE_SIZE / 2;
         
-        // Movement trail effect (if moving) - dust particles
-        if (player.isMoving) {
-            const trailAlpha = 0.3 * (1 - player.interpolation);
-            const trailX = screenPos.x + (player.x - player.targetX) * TILE_SIZE * player.interpolation + TILE_SIZE / 2;
-            const trailY = screenPos.y + (player.y - player.targetY) * TILE_SIZE * player.interpolation + TILE_SIZE / 2;
-            
-            // Dust clouds
-            this.ctx.fillStyle = `rgba(139, 115, 85, ${trailAlpha})`;
-            for (let i = 0; i < 3; i++) {
-                const offsetX = (Math.random() - 0.5) * 10;
-                const offsetY = (Math.random() - 0.5) * 5 + 5;
-                this.ctx.beginPath();
-                this.ctx.arc(trailX + offsetX, trailY + offsetY, 3 + Math.random() * 2, 0, Math.PI * 2);
-                this.ctx.fill();
-            }
-        }
-        
         // Draw animated person sprite
         this.drawPersonSprite(centerX, centerY, player.facing, player.animationFrame, player.isMoving);
     }
