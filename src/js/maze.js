@@ -25,13 +25,49 @@ class Maze {
         this.initializeGrid();
     }
     
+    // STEP 3: Safe Grid Modification System
+    
+    modifyGridSafely(x, y, value, context = 'unknown') {
+        // Validation wrapper for all grid modifications
+        if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
+            console.error(`🚨 GRID SAFETY: Invalid coordinates (${x},${y}) in ${context}`);
+            return false;
+        }
+        
+        const oldValue = this.grid[y][x];
+        this.grid[y][x] = value;
+        
+        // Track the modification for debugging
+        if (context !== 'initialization' && context !== 'generation') {
+            console.log(`🛡️ GRID MODIFICATION: (${x},${y}) ${oldValue}→${value} [${context}]`);
+        }
+        
+        // Emergency validation for pressure plate interactions
+        if (value === 0) { // Making it a floor
+            this.validatePressurePlatePositions();
+        }
+        
+        return true;
+    }
+    
+    isValidGridPosition(x, y) {
+        return x >= 0 && x < this.width && y >= 0 && y < this.height;
+    }
+    
+    safeGetGridValue(x, y, defaultValue = 1) {
+        if (!this.isValidGridPosition(x, y)) {
+            return defaultValue; // Return wall by default for out-of-bounds
+        }
+        return this.grid[y][x];
+    }
+    
     initializeGrid() {
         // Initialize grid with all walls
         this.grid = [];
         for (let y = 0; y < this.height; y++) {
             this.grid[y] = [];
             for (let x = 0; x < this.width; x++) {
-                this.grid[y][x] = 1; // 1 = wall, 0 = floor
+                this.modifyGridSafely(x, y, 1, 'initialization'); // 1 = wall, 0 = floor
             }
         }
     }
@@ -44,7 +80,7 @@ class Maze {
         const startX = 1;
         const startY = 1;
         
-        this.grid[startY][startX] = 0; // Mark start as floor
+        this.modifyGridSafely(startX, startY, 0, 'generation'); // Mark start as floor
         stack.push({ x: startX, y: startY });
         
         while (stack.length > 0) {
@@ -66,8 +102,8 @@ class Maze {
                 const wallX = current.x + (next.x - current.x) / 2;
                 const wallY = current.y + (next.y - current.y) / 2;
                 
-                this.grid[wallY][wallX] = 0;
-                this.grid[next.y][next.x] = 0;
+                this.modifyGridSafely(wallX, wallY, 0, 'generation');
+                this.modifyGridSafely(next.x, next.y, 0, 'generation');
                 
                 stack.push(next);
             } else {
@@ -629,6 +665,12 @@ class Maze {
             const location = locations[index];
             locations.splice(index, 1);
             
+            // ROOT CAUSE #6 FIX: Validate the location is still a floor tile
+            if (this.safeGetGridValue(location.x, location.y) !== 0) {
+                console.warn(`🚨 PLACEMENT FIX: Skipping pressure plate at (${location.x},${location.y}) - not a floor tile`);
+                continue; // Skip this location, it's not a floor tile
+            }
+            
             // Find walls that this plate will control
             const affectedWalls = this.findAffectedWalls(location.x, location.y);
             
@@ -644,6 +686,12 @@ class Maze {
                 };
                 
                 this.pressurePlates.push(plate);
+                
+                // IMMEDIATE VALIDATION: Double-check the plate position after placement
+                if (this.safeGetGridValue(plate.x, plate.y) !== 0) {
+                    console.error(`🚨 CRITICAL: Just placed pressure plate on non-floor at (${plate.x},${plate.y})`);
+                    this.pressurePlates.pop(); // Remove the invalid plate immediately
+                }
             }
         }
     }
@@ -943,7 +991,7 @@ class Maze {
         const startX = 1;
         const startY = 1;
         
-        this.grid[startY][startX] = 0;
+        this.modifyGridSafely(startX, startY, 0, 'fallback-generation');
         stack.push({ x: startX, y: startY });
         
         while (stack.length > 0) {
@@ -957,8 +1005,8 @@ class Maze {
                 const wallX = current.x + (next.x - current.x) / 2;
                 const wallY = current.y + (next.y - current.y) / 2;
                 
-                this.grid[wallY][wallX] = 0;
-                this.grid[next.y][next.x] = 0;
+                this.modifyGridSafely(wallX, wallY, 0, 'fallback-generation');
+                this.modifyGridSafely(next.x, next.y, 0, 'fallback-generation');
                 
                 stack.push(next);
             } else {
@@ -993,8 +1041,8 @@ class Maze {
             this.endY = this.height - 2;
             
             // Ensure these are floor tiles
-            this.grid[1][1] = 0;
-            this.grid[this.height - 2][this.width - 2] = 0;
+            this.modifyGridSafely(1, 1, 0, 'fallback-connectivity');
+            this.modifyGridSafely(this.width - 2, this.height - 2, 0, 'fallback-connectivity');
         }
     }
     
@@ -1554,18 +1602,18 @@ class Maze {
         
         // Horizontal movement toward end
         while (currentX !== this.endX) {
-            this.grid[currentY][currentX] = 0; // Ensure floor
+            this.modifyGridSafely(currentX, currentY, 0, 'guaranteed-path'); // Ensure floor
             currentX += currentX < this.endX ? 1 : -1;
         }
         
         // Vertical movement toward end
         while (currentY !== this.endY) {
-            this.grid[currentY][currentX] = 0; // Ensure floor
+            this.modifyGridSafely(currentX, currentY, 0, 'guaranteed-path'); // Ensure floor
             currentY += currentY < this.endY ? 1 : -1;
         }
         
         // Ensure end position is floor
-        this.grid[this.endY][this.endX] = 0;
+        this.modifyGridSafely(this.endX, this.endY, 0, 'guaranteed-path');
         
         console.log(`Guaranteed path created from (${this.startX},${this.startY}) to (${this.endX},${this.endY})`);
         
@@ -1988,9 +2036,8 @@ class Maze {
     }
     
     wouldCreateUsefulShortcut(x, y) {
-        // Temporarily remove wall to test connectivity
-        const originalState = this.grid[y][x];
-        this.grid[y][x] = 0;
+        // STEP 2 FIX: Use pathfinding simulation instead of grid modification
+        // Never modify the actual grid during testing
         
         // Check if this creates a meaningful alternative path
         const neighbors = [
@@ -2000,16 +2047,81 @@ class Maze {
         
         let accessibleNeighbors = 0;
         for (const neighbor of neighbors) {
-            if (this.isPositionAccessible(neighbor.x, neighbor.y, new Set(), false)) {
+            // Use simulation: temporarily treat the test position as floor for pathfinding
+            if (this.isPositionAccessibleWithSimulation(neighbor.x, neighbor.y, x, y)) {
                 accessibleNeighbors++;
             }
         }
         
-        // Restore original state
-        this.grid[y][x] = originalState;
-        
         // Useful if it connects 2+ separate areas
         return accessibleNeighbors >= 2;
+    }
+    
+    isPositionAccessibleWithSimulation(startX, startY, simulatedFloorX, simulatedFloorY) {
+        // BFS pathfinding with simulation (does not modify actual grid)
+        if (startX < 0 || startX >= this.width || startY < 0 || startY >= this.height) {
+            return false;
+        }
+        
+        // If checking the simulated position itself, treat it as floor
+        if (startX === simulatedFloorX && startY === simulatedFloorY) {
+            return true;
+        }
+        
+        // If it's normally a wall (but not the simulated floor), it's inaccessible
+        if (this.grid[startY][startX] === 1) {
+            return false;
+        }
+        
+        // Use simple connectivity check with BFS
+        const queue = [{ x: startX, y: startY }];
+        const visited = new Set();
+        visited.add(`${startX},${startY}`);
+        
+        while (queue.length > 0) {
+            const current = queue.shift();
+            
+            // Check all 4 directions
+            const directions = [
+                { x: current.x - 1, y: current.y },
+                { x: current.x + 1, y: current.y },
+                { x: current.x, y: current.y - 1 },
+                { x: current.x, y: current.y + 1 }
+            ];
+            
+            for (const next of directions) {
+                if (next.x < 0 || next.x >= this.width || next.y < 0 || next.y >= this.height) {
+                    continue;
+                }
+                
+                const nextKey = `${next.x},${next.y}`;
+                if (visited.has(nextKey)) {
+                    continue;
+                }
+                
+                // Check if this position is accessible in our simulation
+                let isAccessible = false;
+                if (next.x === simulatedFloorX && next.y === simulatedFloorY) {
+                    // Treat simulated position as floor
+                    isAccessible = true;
+                } else if (this.grid[next.y][next.x] === 0) {
+                    // Normal floor tile
+                    isAccessible = true;
+                }
+                
+                if (isAccessible) {
+                    visited.add(nextKey);
+                    queue.push(next);
+                    
+                    // If we can reach a reasonable distance, consider it accessible
+                    if (visited.size > 5) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        return visited.size > 1; // At least some connectivity
     }
     
     createPressurePlateRoute(route) {
