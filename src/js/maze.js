@@ -4,6 +4,7 @@ class Maze {
         this.width = width;
         this.height = height;
         this.grid = [];
+        this.torches = []; // Array of torch positions {x, y, side}
         this.startX = 1;
         this.startY = 1;
         this.endX = width - 2;
@@ -64,6 +65,9 @@ class Maze {
         
         // Set random start and end positions
         this.setStartAndEnd();
+        
+        // Place torches along walls
+        this.placeTorches();
     }
     
     getUnvisitedNeighbors(x, y) {
@@ -121,6 +125,80 @@ class Maze {
             this.endX = endTile.x;
             this.endY = endTile.y;
         }
+    }
+    
+    placeTorches() {
+        this.torches = [];
+        const minDistance = 8; // Minimum distance between torches
+        const torchDensity = 0.15; // Percentage of suitable walls that should have torches
+        
+        // Find all wall positions that could have torches
+        const candidateWalls = [];
+        
+        for (let y = 1; y < this.height - 1; y++) {
+            for (let x = 1; x < this.width - 1; x++) {
+                if (this.grid[y][x] === 1) { // Wall tile
+                    // Check if this wall is adjacent to a floor tile
+                    const adjacentToFloor = this.hasAdjacentFloor(x, y);
+                    if (adjacentToFloor) {
+                        candidateWalls.push({ x, y, side: this.getWallSide(x, y) });
+                    }
+                }
+            }
+        }
+        
+        // Place torches with minimum distance constraint
+        for (const candidate of candidateWalls) {
+            if (Math.random() < torchDensity) {
+                // Check distance from existing torches
+                let tooClose = false;
+                for (const existingTorch of this.torches) {
+                    const distance = Math.abs(candidate.x - existingTorch.x) + Math.abs(candidate.y - existingTorch.y);
+                    if (distance < minDistance) {
+                        tooClose = true;
+                        break;
+                    }
+                }
+                
+                // Don't place torches too close to start or end
+                const distanceFromStart = Math.abs(candidate.x - this.startX) + Math.abs(candidate.y - this.startY);
+                const distanceFromEnd = Math.abs(candidate.x - this.endX) + Math.abs(candidate.y - this.endY);
+                
+                if (!tooClose && distanceFromStart > 3 && distanceFromEnd > 3) {
+                    this.torches.push(candidate);
+                }
+            }
+        }
+    }
+    
+    hasAdjacentFloor(x, y) {
+        const directions = [
+            { x: 0, y: -1 }, // Up
+            { x: 1, y: 0 },  // Right
+            { x: 0, y: 1 },  // Down
+            { x: -1, y: 0 }  // Left
+        ];
+        
+        for (const dir of directions) {
+            const checkX = x + dir.x;
+            const checkY = y + dir.y;
+            if (checkX >= 0 && checkX < this.width && 
+                checkY >= 0 && checkY < this.height && 
+                this.grid[checkY][checkX] === 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    getWallSide(x, y) {
+        // Determine which side of the wall the torch should be on
+        // Check which directions have floor tiles
+        if (this.isFloor(x, y - 1)) return 'bottom'; // Floor above, torch on bottom
+        if (this.isFloor(x + 1, y)) return 'left';   // Floor to right, torch on left
+        if (this.isFloor(x, y + 1)) return 'top';    // Floor below, torch on top
+        if (this.isFloor(x - 1, y)) return 'right';  // Floor to left, torch on right
+        return 'bottom'; // Default
     }
     
     isWall(x, y) {

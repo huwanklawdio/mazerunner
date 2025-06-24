@@ -282,6 +282,39 @@ class Game {
                     COLORS.END_GLOW
                 );
             }
+            
+            // Create torch flame particles
+            const bounds = this.camera.getVisibleBounds();
+            for (const torch of this.maze.torches) {
+                // Only create particles for visible torches
+                if (torch.x >= bounds.startX && torch.x < bounds.endX &&
+                    torch.y >= bounds.startY && torch.y < bounds.endY) {
+                    
+                    // Create particles at ~30% chance per frame for continuous but not overwhelming effect
+                    if (Math.random() < 0.3) {
+                        let torchX = torch.x * TILE_SIZE + TILE_SIZE / 2;
+                        let torchY = torch.y * TILE_SIZE + TILE_SIZE / 2;
+                        
+                        // Offset based on wall side (same logic as renderer)
+                        switch (torch.side) {
+                            case 'top':
+                                torchY = torch.y * TILE_SIZE + 8;
+                                break;
+                            case 'bottom':
+                                torchY = torch.y * TILE_SIZE + TILE_SIZE - 8;
+                                break;
+                            case 'left':
+                                torchX = torch.x * TILE_SIZE + 8;
+                                break;
+                            case 'right':
+                                torchX = torch.x * TILE_SIZE + TILE_SIZE - 8;
+                                break;
+                        }
+                        
+                        this.particleSystem.createTorchFlame(torchX, torchY - 8);
+                    }
+                }
+            }
         }
         
         // Update particle system

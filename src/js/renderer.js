@@ -13,6 +13,9 @@ class Renderer {
         // Render start and end positions
         this.renderSpecialTiles(maze, camera);
         
+        // Render torches
+        this.renderTorches(maze, camera);
+        
         // Render player
         this.renderPlayer(player, camera);
         
@@ -174,6 +177,81 @@ class Renderer {
         // Main end tile
         this.ctx.fillStyle = COLORS.END;
         this.ctx.fillRect(endScreenPos.x + 6, endScreenPos.y + 6, TILE_SIZE - 12, TILE_SIZE - 12);
+    }
+    
+    renderTorches(maze, camera) {
+        for (const torch of maze.torches) {
+            const worldX = torch.x * TILE_SIZE;
+            const worldY = torch.y * TILE_SIZE;
+            const screenPos = camera.worldToScreen(worldX, worldY);
+            
+            // Only render if torch is visible on screen
+            if (screenPos.x < -TILE_SIZE || screenPos.x > camera.viewWidth ||
+                screenPos.y < -TILE_SIZE || screenPos.y > camera.viewHeight) {
+                continue;
+            }
+            
+            this.drawTorch(screenPos.x, screenPos.y, torch.side);
+        }
+    }
+    
+    drawTorch(x, y, side) {
+        const ctx = this.ctx;
+        const time = Date.now() / 1000;
+        
+        // Calculate torch position based on wall side
+        let torchX = x + TILE_SIZE / 2;
+        let torchY = y + TILE_SIZE / 2;
+        
+        // Offset torch position based on wall side
+        switch (side) {
+            case 'top':
+                torchY = y + 8;
+                break;
+            case 'bottom':
+                torchY = y + TILE_SIZE - 8;
+                break;
+            case 'left':
+                torchX = x + 8;
+                break;
+            case 'right':
+                torchX = x + TILE_SIZE - 8;
+                break;
+        }
+        
+        // Draw torch bracket (metal holder)
+        ctx.fillStyle = '#696969';
+        ctx.fillRect(torchX - 2, torchY - 8, 4, 16);
+        
+        // Draw torch handle (wood)
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(torchX - 1, torchY - 6, 2, 12);
+        
+        // Draw flame base (always visible)
+        const flameFlicker = Math.sin(time * 8) * 2;
+        ctx.fillStyle = COLORS.FIRE_OUTER;
+        ctx.beginPath();
+        ctx.ellipse(torchX, torchY - 8 + flameFlicker, 4, 6 + flameFlicker, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw flame middle
+        ctx.fillStyle = COLORS.FIRE_MID;
+        ctx.beginPath();
+        ctx.ellipse(torchX, torchY - 10 + flameFlicker, 3, 5 + flameFlicker, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw flame core
+        ctx.fillStyle = COLORS.FIRE_CORE;
+        ctx.beginPath();
+        ctx.ellipse(torchX, torchY - 12 + flameFlicker, 2, 3 + flameFlicker * 0.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Add glow effect
+        const glowIntensity = 0.5 + 0.3 * Math.sin(time * 4);
+        ctx.fillStyle = `rgba(255, 149, 0, ${glowIntensity * 0.3})`;
+        ctx.beginPath();
+        ctx.ellipse(torchX, torchY - 8, 8, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
     }
     
     renderPlayer(player, camera) {
