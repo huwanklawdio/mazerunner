@@ -7,29 +7,67 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="game-container">
-        <div class="ui-overlay">
-            <div class="game-info">
-                <span id="status">Press SPACE to start</span>
-                <div class="game-controls">
-                    <div class="difficulty-selector">
-                        <label for="difficulty">Difficulty:</label>
-                        <select id="difficulty" class="difficulty-dropdown">
-                            <option value="EASY">Easy</option>
-                            <option value="MEDIUM" selected>Medium</option>
-                            <option value="HARD">Hard</option>
-                            <option value="EXPERT">Expert</option>
-                        </select>
+    <div class="game-layout">
+        <div class="side-panel" id="sidePanel">
+            <div class="panel-header">
+                <h3>⚔️ Knight's Quest</h3>
+                <button id="panelToggle" class="panel-toggle">◀</button>
+            </div>
+            
+            <div class="panel-content">
+                <div class="quest-status">
+                    <h4>Quest Status</h4>
+                    <div id="status" class="status-text">Press SPACE to start</div>
+                </div>
+                
+                <div class="quest-settings">
+                    <h4>Difficulty</h4>
+                    <select id="difficulty" class="difficulty-dropdown">
+                        <option value="EASY">Easy</option>
+                        <option value="MEDIUM" selected>Medium</option>
+                        <option value="HARD">Hard</option>
+                        <option value="EXPERT">Expert</option>
+                    </select>
+                </div>
+                
+                <div class="quest-stats">
+                    <h4>Current Quest</h4>
+                    <div class="stat-row">
+                        <span>Time:</span>
+                        <span id="timer" class="timer-display">00:00</span>
                     </div>
-                    <div class="controls">
-                        <button id="mapToggle" class="control-button">📍</button>
-                        <button id="soundToggle" class="control-button">🔊</button>
+                    <div class="stat-row">
+                        <span>Steps:</span>
+                        <span id="steps">0</span>
                     </div>
+                    <div class="stat-row">
+                        <span>Best Time:</span>
+                        <span id="bestTime">--:--</span>
+                    </div>
+                </div>
+                
+                <div class="quest-controls">
+                    <h4>Controls</h4>
+                    <button id="mapToggle" class="control-button">
+                        <span class="button-icon">🗺️</span>
+                        <span class="button-text">Toggle Map</span>
+                    </button>
+                    <button id="soundToggle" class="control-button">
+                        <span class="button-icon">🔊</span>
+                        <span class="button-text">Toggle Sound</span>
+                    </button>
+                    <button id="achievementsBtn" class="control-button">
+                        <span class="button-icon">🏆</span>
+                        <span class="button-text">Achievements</span>
+                    </button>
                 </div>
             </div>
         </div>
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
-    </div>
+        
+        <div class="game-container">
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+        </div>
+    </div></body>
     
     <script src="src/js/utils.js"></script>
     <script src="src/js/audio.js"></script>

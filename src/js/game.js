@@ -74,11 +74,41 @@ class Game {
         // Set up stats display
         this.setupStatsDisplay();
         
+        // Set up side panel
+        this.setupSidePanel();
+        
         // Set initial status message
         this.status.textContent = `${this.difficultyConfig.name} - ${this.difficultyConfig.description}. Press SPACE to start`;
         
         // Start game loop
         this.gameLoop(0);
+    }
+    
+    setupSidePanel() {
+        const panelToggle = document.getElementById('panelToggle');
+        const sidePanel = document.getElementById('sidePanel');
+        
+        panelToggle.addEventListener('click', () => {
+            sidePanel.classList.toggle('collapsed');
+            
+            // Update toggle button text
+            if (sidePanel.classList.contains('collapsed')) {
+                panelToggle.textContent = '▶';
+            } else {
+                panelToggle.textContent = '◀';
+            }
+        });
+        
+        // Auto-collapse panel during gameplay
+        const originalStartGame = this.startNewGame.bind(this);
+        this.startNewGame = () => {
+            originalStartGame();
+            // Auto-collapse panel when game starts
+            if (window.innerWidth < 1200) { // Only on smaller screens
+                sidePanel.classList.add('collapsed');
+                panelToggle.textContent = '▶';
+            }
+        };
     }
     
     setupInput() {
@@ -91,6 +121,22 @@ class Game {
         document.addEventListener('keyup', (e) => {
             this.keys[e.code] = false;
             e.preventDefault();
+        });
+        
+        // Add click handling for start button
+        this.canvas.addEventListener('click', (e) => {
+            if (this.state === 'start' && this.startButtonBounds) {
+                const rect = this.canvas.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+                
+                if (clickX >= this.startButtonBounds.x && 
+                    clickX <= this.startButtonBounds.x + this.startButtonBounds.width &&
+                    clickY >= this.startButtonBounds.y && 
+                    clickY <= this.startButtonBounds.y + this.startButtonBounds.height) {
+                    this.startNewGame();
+                }
+            }
         });
     }
     
@@ -124,27 +170,25 @@ class Game {
             mapToggle.classList.toggle('disabled', !visible);
             mapToggle.title = visible ? 'Hide Mini-map' : 'Show Mini-map';
         });
+        
+        // Achievements button
+        const achievementsBtn = document.getElementById('achievementsBtn');
+        if (achievementsBtn) {
+            achievementsBtn.style.pointerEvents = 'auto';
+            achievementsBtn.addEventListener('click', () => {
+                if (this.achievementUI) {
+                    this.achievementUI.showModal();
+                }
+            });
+        }
     }
     
     setupStatsDisplay() {
-        // Create stats display elements
-        const gameInfo = document.querySelector('.game-info');
-        
-        // Timer display
-        const timerDiv = document.createElement('div');
-        timerDiv.className = 'timer-display';
-        timerDiv.innerHTML = '<span id="timer">00:00</span>';
-        
-        // Stats display
-        const statsDiv = document.createElement('div');
-        statsDiv.className = 'stats-display';
-        statsDiv.innerHTML = `
-            <div class="stat-item">Steps: <span id="steps">0</span></div>
-            <div class="stat-item">Best: <span id="bestTime">${this.formatTime(this.stats.bestTime)}</span></div>
-        `;
-        
-        gameInfo.appendChild(timerDiv);
-        gameInfo.appendChild(statsDiv);
+        // Stats are now in the side panel, just initialize best time display
+        const bestTimeElement = document.getElementById('bestTime');
+        if (bestTimeElement) {
+            bestTimeElement.textContent = this.formatTime(this.stats.bestTime);
+        }
     }
     
     loadStats() {
@@ -248,7 +292,7 @@ class Game {
     }
     
     handleInput() {
-        if (this.keyPressed['Space']) {
+        if (this.keyPressed['Space'] || this.keyPressed['Enter']) {
             if (this.state === 'start' || this.state === 'won') {
                 this.startNewGame();
             }
@@ -440,22 +484,267 @@ class Game {
         this.ctx.fillStyle = '#000';
         this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         
-        if (this.state !== 'start') {
+        if (this.state === 'start') {
+            // Show medieval start screen
+            this.renderStartScreen();
+        } else {
             this.renderer.render(this.maze, this.player, this.camera);
             
             // Render particles
             this.particleSystem.render(this.ctx, this.camera);
             
             this.miniMap.render(this.player);
-        } else {
-            // Show start screen
-            this.ctx.fillStyle = '#fff';
-            this.ctx.font = '24px Courier New';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText('MAZE RUNNER', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 50);
-            this.ctx.font = '16px Courier New';
-            this.ctx.fillText('Use arrow keys to navigate', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
-            this.ctx.fillText('Press SPACE to start', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 30);
+            
+            // Show victory overlay if won
+            if (this.state === 'won') {
+                this.renderVictoryScreen();
+            }
+        }
+    }
+    
+    renderStartScreen() {
+        const centerX = CANVAS_WIDTH / 2;
+        const centerY = CANVAS_HEIGHT / 2;
+        
+        // Draw parchment background
+        this.ctx.fillStyle = '#f4e8d0';
+        this.ctx.fillRect(50, 80, CANVAS_WIDTH - 100, CANVAS_HEIGHT - 160);
+        
+        // Parchment border - dark brown frame
+        this.ctx.strokeStyle = '#8B4513';
+        this.ctx.lineWidth = 8;
+        this.ctx.strokeRect(50, 80, CANVAS_WIDTH - 100, CANVAS_HEIGHT - 160);
+        
+        // Inner border decoration
+        this.ctx.strokeStyle = '#A0522D';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(60, 90, CANVAS_WIDTH - 120, CANVAS_HEIGHT - 180);
+        
+        // Add aged paper texture
+        this.ctx.fillStyle = 'rgba(139, 115, 85, 0.1)';
+        for (let i = 0; i < 20; i++) {
+            const x = 70 + Math.random() * (CANVAS_WIDTH - 140);
+            const y = 100 + Math.random() * (CANVAS_HEIGHT - 200);
+            this.ctx.fillRect(x, y, 2 + Math.random() * 3, 1);
+        }
+        
+        // Title - "DUNGEON ESCAPE"
+        this.ctx.fillStyle = '#2F1B14';
+        this.ctx.font = 'bold 36px serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.strokeStyle = '#8B4513';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeText('DUNGEON ESCAPE', centerX, centerY - 120);
+        this.ctx.fillText('DUNGEON ESCAPE', centerX, centerY - 120);
+        
+        // Subtitle
+        this.ctx.font = 'italic 18px serif';
+        this.ctx.fillStyle = '#5D4037';
+        this.ctx.fillText('~ Quest of the Armored Knight ~', centerX, centerY - 85);
+        
+        // Draw decorative elements
+        this.drawScrollDecorations(centerX, centerY);
+        
+        // Instructions
+        this.ctx.font = '16px serif';
+        this.ctx.fillStyle = '#3E2723';
+        this.ctx.fillText('A brave knight seeks treasure in the ancient dungeon', centerX, centerY - 20);
+        this.ctx.fillText('Use ⬆️ ⬇️ ⬅️ ➡️ to navigate the stone corridors', centerX, centerY + 10);
+        
+        // Difficulty display
+        this.ctx.font = 'bold 14px serif';
+        this.ctx.fillStyle = '#8B4513';
+        this.ctx.fillText(`Current Quest: ${this.difficultyConfig.name}`, centerX, centerY + 50);
+        this.ctx.font = '12px serif';
+        this.ctx.fillStyle = '#5D4037';
+        this.ctx.fillText(this.difficultyConfig.description, centerX, centerY + 70);
+        
+        // Start prompt with animation
+        const pulseAlpha = 0.5 + 0.5 * Math.sin(Date.now() / 500);
+        this.ctx.font = 'bold 20px serif';
+        this.ctx.fillStyle = `rgba(139, 69, 19, ${pulseAlpha})`;
+        this.ctx.strokeStyle = `rgba(255, 215, 0, ${pulseAlpha})`;
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeText('⚔️ Press SPACE to begin your quest ⚔️', centerX, centerY + 120);
+        this.ctx.fillText('⚔️ Press SPACE to begin your quest ⚔️', centerX, centerY + 120);
+        
+        // Draw clickable start button
+        const buttonWidth = 200;
+        const buttonHeight = 40;
+        const buttonX = centerX - buttonWidth / 2;
+        const buttonY = centerY + 140;
+        
+        // Button background
+        this.ctx.fillStyle = 'rgba(139, 69, 19, 0.8)';
+        this.ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
+        
+        // Button border
+        this.ctx.strokeStyle = '#DAA520';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(buttonX, buttonY, buttonWidth, buttonHeight);
+        
+        // Button text
+        this.ctx.fillStyle = '#fff';
+        this.ctx.font = 'bold 16px serif';
+        this.ctx.fillText('START QUEST', centerX, buttonY + 25);
+        
+        // Store button bounds for click detection
+        this.startButtonBounds = {
+            x: buttonX,
+            y: buttonY,
+            width: buttonWidth,
+            height: buttonHeight
+        };
+    }
+    
+    drawScrollDecorations(centerX, centerY) {
+        const ctx = this.ctx;
+        
+        // Decorative corner elements
+        ctx.strokeStyle = '#8B4513';
+        ctx.lineWidth = 3;
+        
+        // Top left corner
+        ctx.beginPath();
+        ctx.moveTo(80, 110);
+        ctx.lineTo(120, 110);
+        ctx.moveTo(80, 110);
+        ctx.lineTo(80, 150);
+        ctx.stroke();
+        
+        // Top right corner
+        ctx.beginPath();
+        ctx.moveTo(CANVAS_WIDTH - 80, 110);
+        ctx.lineTo(CANVAS_WIDTH - 120, 110);
+        ctx.moveTo(CANVAS_WIDTH - 80, 110);
+        ctx.lineTo(CANVAS_WIDTH - 80, 150);
+        ctx.stroke();
+        
+        // Bottom left corner
+        ctx.beginPath();
+        ctx.moveTo(80, CANVAS_HEIGHT - 110);
+        ctx.lineTo(120, CANVAS_HEIGHT - 110);
+        ctx.moveTo(80, CANVAS_HEIGHT - 110);
+        ctx.lineTo(80, CANVAS_HEIGHT - 150);
+        ctx.stroke();
+        
+        // Bottom right corner
+        ctx.beginPath();
+        ctx.moveTo(CANVAS_WIDTH - 80, CANVAS_HEIGHT - 110);
+        ctx.lineTo(CANVAS_WIDTH - 120, CANVAS_HEIGHT - 110);
+        ctx.moveTo(CANVAS_WIDTH - 80, CANVAS_HEIGHT - 110);
+        ctx.lineTo(CANVAS_WIDTH - 80, CANVAS_HEIGHT - 150);
+        ctx.stroke();
+        
+        // Central decorative emblem
+        ctx.fillStyle = '#8B4513';
+        ctx.beginPath();
+        ctx.arc(centerX, centerY - 50, 8, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Shield shape around emblem
+        ctx.strokeStyle = '#A0522D';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(centerX - 15, centerY - 60);
+        ctx.lineTo(centerX + 15, centerY - 60);
+        ctx.lineTo(centerX + 15, centerY - 45);
+        ctx.lineTo(centerX, centerY - 35);
+        ctx.lineTo(centerX - 15, centerY - 45);
+        ctx.closePath();
+        ctx.stroke();
+    }
+    
+    renderVictoryScreen() {
+        // Semi-transparent overlay
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        
+        const centerX = CANVAS_WIDTH / 2;
+        const centerY = CANVAS_HEIGHT / 2;
+        
+        // Victory parchment
+        this.ctx.fillStyle = '#f4e8d0';
+        this.ctx.fillRect(100, 150, CANVAS_WIDTH - 200, CANVAS_HEIGHT - 300);
+        
+        // Parchment border
+        this.ctx.strokeStyle = '#8B4513';
+        this.ctx.lineWidth = 6;
+        this.ctx.strokeRect(100, 150, CANVAS_WIDTH - 200, CANVAS_HEIGHT - 300);
+        
+        // Inner border
+        this.ctx.strokeStyle = '#DAA520';
+        this.ctx.lineWidth = 3;
+        this.ctx.strokeRect(110, 160, CANVAS_WIDTH - 220, CANVAS_HEIGHT - 320);
+        
+        // Treasure chest animation
+        const chestBob = Math.sin(Date.now() / 300) * 3;
+        this.drawTreasureChest(centerX, centerY - 80 + chestBob);
+        
+        // Victory title
+        this.ctx.fillStyle = '#8B4513';
+        this.ctx.font = 'bold 28px serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.strokeStyle = '#DAA520';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeText('🏆 QUEST COMPLETE! 🏆', centerX, centerY - 20);
+        this.ctx.fillText('🏆 QUEST COMPLETE! 🏆', centerX, centerY - 20);
+        
+        // Completion details
+        this.ctx.font = '16px serif';
+        this.ctx.fillStyle = '#5D4037';
+        this.ctx.fillText(`Difficulty: ${this.difficultyConfig.name}`, centerX, centerY + 10);
+        this.ctx.fillText(`Time: ${this.formatTime(this.currentTime)}`, centerX, centerY + 30);
+        this.ctx.fillText(`Steps: ${this.stepCount}`, centerX, centerY + 50);
+        
+        // Best time indicator
+        if (this.currentTime < this.stats.bestTime) {
+            this.ctx.font = 'bold 14px serif';
+            this.ctx.fillStyle = '#DAA520';
+            this.ctx.fillText('✨ NEW BEST TIME! ✨', centerX, centerY + 75);
+        }
+        
+        // Continue prompt with animation
+        const pulseAlpha = 0.5 + 0.5 * Math.sin(Date.now() / 400);
+        this.ctx.font = 'bold 18px serif';
+        this.ctx.fillStyle = `rgba(139, 69, 19, ${pulseAlpha})`;
+        this.ctx.strokeStyle = `rgba(255, 215, 0, ${pulseAlpha})`;
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeText('Press SPACE for another quest', centerX, centerY + 110);
+        this.ctx.fillText('Press SPACE for another quest', centerX, centerY + 110);
+    }
+    
+    drawTreasureChest(x, y) {
+        const ctx = this.ctx;
+        
+        // Chest base
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(x - 25, y + 5, 50, 20);
+        
+        // Chest lid
+        ctx.fillStyle = '#A0522D';
+        ctx.fillRect(x - 25, y - 10, 50, 15);
+        
+        // Chest lock
+        ctx.fillStyle = '#DAA520';
+        ctx.fillRect(x - 3, y - 2, 6, 8);
+        
+        // Chest hinges
+        ctx.fillStyle = '#696969';
+        ctx.fillRect(x - 20, y - 8, 3, 5);
+        ctx.fillRect(x + 17, y - 8, 3, 5);
+        
+        // Sparkles around chest
+        const sparkleTime = Date.now() / 200;
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2 + sparkleTime;
+            const sparkleX = x + Math.cos(angle) * 35;
+            const sparkleY = y + Math.sin(angle) * 25;
+            
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(sparkleX, sparkleY, 2, 0, Math.PI * 2);
+            ctx.fill();
         }
     }
     

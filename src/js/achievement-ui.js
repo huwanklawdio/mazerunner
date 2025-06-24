@@ -19,26 +19,21 @@ class AchievementUI {
     }
     
     createAchievementButton() {
-        const controls = document.querySelector('.controls');
-        const achievementButton = document.createElement('button');
-        achievementButton.id = 'achievementToggle';
-        achievementButton.className = 'control-button';
-        achievementButton.innerHTML = '🏆';
-        achievementButton.title = 'View Achievements';
-        achievementButton.style.pointerEvents = 'auto';
-        
-        achievementButton.addEventListener('click', () => {
-            this.toggleAchievementModal();
-        });
-        
-        controls.appendChild(achievementButton);
-        
-        // Update button with progress indicator
-        this.updateAchievementButton();
+        // The achievement button already exists in the new layout
+        const achievementButton = document.getElementById('achievementsBtn');
+        if (achievementButton) {
+            // Just add the click listener since the button already exists
+            achievementButton.addEventListener('click', () => {
+                this.toggleAchievementModal();
+            });
+            
+            // Update button with progress indicator
+            this.updateAchievementButton();
+        }
     }
     
     updateAchievementButton() {
-        const button = document.getElementById('achievementToggle');
+        const button = document.getElementById('achievementsBtn');
         const progress = this.achievementSystem.getCompletionPercentage();
         button.title = `Achievements (${this.achievementSystem.getUnlockedCount()}/${this.achievementSystem.getTotalCount()}) - ${progress}%`;
     }
