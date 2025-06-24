@@ -117,6 +117,7 @@
             <li>✅ Memory Stability (Long-term usage)</li>
             <li>📜 Notification System (Parchment notifications and queue)</li>
             <li>🔍 Solvability Validation (All difficulty levels)</li>
+            <li>🛤️ Phase 2 Multi-Path Strategy (Redundant solution paths)</li>
         </ul>
     </div>
     
@@ -128,6 +129,7 @@
         <button id="runPerformanceTests" class="test-button">⚡ Performance Only</button>
         <button id="runNotificationTests" class="test-button" style="background: #8B6914;">📜 Notification System</button>
         <button id="runSolvabilityTests" class="test-button" style="background: #6f42c1;">🔍 Solvability Tests</button>
+        <button id="runPhase2Tests" class="test-button" style="background: #28a745;">🛤️ Phase 2 Multi-Path</button>
         <button id="clearConsole" class="test-button" style="background: #666;">🧹 Clear Console</button>
     </div>
     
@@ -165,6 +167,7 @@ Click "Run All Tests" to begin comprehensive validation...
     <script src="performance-validation.js"></script>
     <script src="notification-tests.js"></script>
     <script src="solvability-tests.js"></script>
+    <script src="phase2-multipath-tests.js"></script>
     
     <script>
         // Test runner UI controller
@@ -209,6 +212,10 @@ Click "Run All Tests" to begin comprehensive validation...
                 
                 document.getElementById('runSolvabilityTests').addEventListener('click', () => {
                     this.runSolvabilityTests();
+                });
+                
+                document.getElementById('runPhase2Tests').addEventListener('click', () => {
+                    this.runPhase2Tests();
                 });
                 
                 document.getElementById('clearConsole').addEventListener('click', () => {
@@ -432,6 +439,34 @@ Click "Run All Tests" to begin comprehensive validation...
                     this.updateProgressBar(100);
                 } catch (error) {
                     this.setStatus('Solvability tests crashed', 'failed');
+                    this.appendToConsole(`CRITICAL ERROR: ${error.message}`);
+                } finally {
+                    this.enableButtons();
+                }
+            }
+            
+            async runPhase2Tests() {
+                try {
+                    this.disableButtons();
+                    this.clearConsole();
+                    this.setStatus('Running Phase 2 multi-path tests...', 'running');
+                    this.currentProgress = 0;
+                    
+                    const phase2Tests = new Phase2MultipathTestSuite();
+                    await phase2Tests.runAllTests();
+                    
+                    const hasErrors = phase2Tests.errors.length > 0;
+                    const hasFailures = phase2Tests.testResults.some(t => t.status === 'FAIL');
+                    
+                    if (hasErrors || hasFailures) {
+                        this.setStatus('Phase 2 tests completed with issues', 'failed');
+                    } else {
+                        this.setStatus('All Phase 2 multi-path tests passed!', 'passed');
+                    }
+                    
+                    this.updateProgressBar(100);
+                } catch (error) {
+                    this.setStatus('Phase 2 tests crashed', 'failed');
                     this.appendToConsole(`CRITICAL ERROR: ${error.message}`);
                 } finally {
                     this.enableButtons();
