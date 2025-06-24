@@ -1,7 +1,8 @@
 // Renderer class for drawing game objects
 class Renderer {
-    constructor(ctx) {
+    constructor(ctx, sprites = null) {
         this.ctx = ctx;
+        this.sprites = sprites;
     }
     
     render(maze, player, camera) {
@@ -576,6 +577,48 @@ class Renderer {
     }
     
     drawPersonSprite(x, y, facing, frame, isMoving) {
+        // Use sprites if available, otherwise fallback to drawn character
+        if (this.sprites && this.sprites.loaded && this.sprites.player.length >= 5) {
+            this.drawSpriteCharacter(x, y, facing, frame, isMoving);
+        } else {
+            this.drawPixelCharacter(x, y, facing, frame, isMoving);
+        }
+    }
+    
+    drawSpriteCharacter(x, y, facing, frame, isMoving) {
+        const size = 32; // Standard tile size for sprites
+        
+        // Shadow (draw before sprite for proper layering)
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        this.ctx.fillRect(x - size/2 + 2, y + size/2 - 2, size - 4, 4);
+        
+        // Calculate walking animation
+        let spriteIndex = 0; // Idle frame (step-1)
+        if (isMoving && this.sprites.player.length >= 5) {
+            // Cycle through all 5 sprite frames based on animation frame
+            spriteIndex = frame % 5;
+        }
+        
+        const sprite = this.sprites.player[spriteIndex];
+        if (sprite) {
+            this.ctx.save();
+            
+            // Ensure proper transparency handling for PNG sprites
+            this.ctx.globalCompositeOperation = 'source-over';
+            
+            // Handle facing direction by flipping sprite
+            if (facing === 'left') {
+                this.ctx.scale(-1, 1);
+                this.ctx.drawImage(sprite, -x - size/2, y - size/2, size, size);
+            } else {
+                this.ctx.drawImage(sprite, x - size/2, y - size/2, size, size);
+            }
+            
+            this.ctx.restore();
+        }
+    }
+    
+    drawPixelCharacter(x, y, facing, frame, isMoving) {
         const size = 24;
         const bodyHeight = 14;
         

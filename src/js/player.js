@@ -83,7 +83,7 @@ class Player {
             // Animate walking while moving
             const frameTime = 1 / this.animationSpeed;
             if (this.animationTime >= frameTime) {
-                this.animationFrame = (this.animationFrame + 1) % 4; // 4 walking frames
+                this.animationFrame = (this.animationFrame + 1) % 5; // 5 sprite frames
                 this.animationTime = 0;
             }
             

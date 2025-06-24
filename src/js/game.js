@@ -38,11 +38,40 @@ class Game {
         this.achievementUI = null;
         this.particleSystem = null;
         
+        // Sprite resources
+        this.sprites = {
+            player: [],
+            loaded: false
+        };
+        
         // Input handling
         this.keys = {};
         this.keyPressed = {};
         
-        this.init();
+        this.loadSprites().then(() => {
+            this.init();
+        });
+    }
+    
+    async loadSprites() {
+        const spriteFiles = ['step-1.png', 'step-2.png', 'step-3.png', 'step-4.png', 'step-5.png'];
+        const loadPromises = spriteFiles.map(filename => {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = `sprites/${filename}`;
+            });
+        });
+        
+        try {
+            this.sprites.player = await Promise.all(loadPromises);
+            this.sprites.loaded = true;
+            console.log('Successfully loaded 5 sprite frames');
+        } catch (error) {
+            console.warn('Failed to load sprites, falling back to simple rendering:', error);
+            this.sprites.loaded = false;
+        }
     }
     
     init() {
@@ -53,7 +82,7 @@ class Game {
         this.maze = new Maze(this.difficultyConfig.gridWidth, this.difficultyConfig.gridHeight);
         this.player = new Player(1, 1); // Start position
         this.camera = new Camera(CANVAS_WIDTH, CANVAS_HEIGHT);
-        this.renderer = new Renderer(this.ctx);
+        this.renderer = new Renderer(this.ctx, this.sprites);
         this.audio = new AudioSystem();
         
         // Create mini-map canvas
