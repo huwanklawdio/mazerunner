@@ -66,7 +66,6 @@ class Player {
         if (plate && !plate.activated) {
             const activated = maze.activatePressurePlate(this.x, this.y, particleSystem);
             if (activated) {
-                console.log('Pressure plate activated!', activated);
                 return activated;
             }
         }

@@ -522,7 +522,6 @@ class Maze {
                 };
                 
                 this.pressurePlates.push(plate);
-                console.log('Placed pressure plate at', location.x, location.y, 'affecting', affectedWalls.length, 'walls');
             }
         }
     }
@@ -720,12 +719,10 @@ class Maze {
         
         while (attempts < maxAttempts) {
             if (this.isPuzzleSolvable()) {
-                console.log(`Key-door puzzle solvable after ${attempts + 1} attempt(s)`);
                 return true;
             }
             
             // Regenerate keys and doors
-            console.log(`Attempt ${attempts + 1}: Puzzle not solvable, regenerating...`);
             this.placeKeysAndDoors();
             attempts++;
         }

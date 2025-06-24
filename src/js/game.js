@@ -459,7 +459,6 @@ class Game {
         const plate = this.maze.getPressurePlateAt(x, y);
         if (plate && !plate.activated) {
             this.maze.activatePressurePlate(x, y, this.particleSystem);
-            console.log('Pressure plate activated at', x, y);
         }
     }
     
