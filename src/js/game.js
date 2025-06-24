@@ -257,6 +257,9 @@ class Game {
             // Check for treasure collection after player position update
             this.checkTreasureCollection();
             
+            // Update environmental puzzles
+            this.maze.updatePressurePlates();
+            
             // Update timer
             this.currentTime = (Date.now() - this.startTime) / 1000;
             this.updateTimerDisplay();
@@ -366,6 +369,15 @@ class Game {
                 attemptedMove = true;
                 direction = 'right';
                 moved = this.player.move(1, 0, this.maze);
+            }
+            
+            // Check for lever activation
+            if (this.keyPressed['KeyE']) {
+                const lever = this.maze.getLeverAt(this.player.x, this.player.y);
+                if (lever) {
+                    this.maze.toggleLever(this.player.x, this.player.y);
+                    this.audio.playKeyCollect(); // Reuse key collection sound for lever
+                }
             }
             
             // Play sound effects and create particles

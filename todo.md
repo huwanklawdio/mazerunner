@@ -52,8 +52,31 @@
 - [x] Add footstep dust particles
 - [x] Add victory celebration effects (gold sparkles)
 - [x] Add portal effects for start/end positions
-- [ ] Add torch flame particles for dungeon atmosphere
-- [ ] Optimize performance
+- [x] Add torch flame particles for dungeon atmosphere
+- [x] Implement comprehensive treasure collection system
+  - [x] Coins, gems, and treasure chests with different values
+  - [x] Animated rendering with spinning coins and sparkling gems
+  - [x] Collection particles and sound effects
+  - [x] Real-time score tracking in UI
+- [x] Implement key & door puzzle system
+  - [x] Color-coded keys and doors (red, blue, green, yellow)
+  - [x] Strategic door placement at corridor chokepoints
+  - [x] Key inventory system with colored UI indicators
+  - [x] Automatic door unlocking with matching keys
+  - [x] Solvability validation algorithm ensuring all puzzles are completable
+  - [x] Key collection and door unlock particle effects
+  - [x] Audio feedback for key collection and door unlocking
+- [x] Enhance UI layout with medieval side panel design
+  - [x] Collapsible side panel with game controls
+  - [x] Real-time stats display (time, steps, treasure, keys)
+  - [x] Achievement system integration
+  - [x] Responsive design for different screen sizes
+- [x] Add comprehensive achievement system with 16 unique badges
+- [x] Implement difficulty levels with different maze sizes and complexity
+- [ ] Add parchment-style notifications for medieval theming
+- [ ] Implement power-up system (speed boost, torch vision, etc.)
+- [ ] Add multi-level progression system
+- [ ] Optimize performance for larger mazes
 
 ## 📝 Notes
 - Grid-based movement

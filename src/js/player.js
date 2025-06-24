@@ -53,6 +53,16 @@ class Player {
             this.isIdle = false;
             this.interpolation = 0;
             this.animationFrame = 0;
+            
+            // Check for pressure plate activation
+            const plate = maze.getPressurePlateAt(newX, newY);
+            if (plate && !plate.activated) {
+                const activated = maze.activatePressurePlate(newX, newY);
+                if (activated) {
+                    console.log('Pressure plate activated!', activated);
+                }
+            }
+            
             return true;
         }
         

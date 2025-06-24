@@ -23,6 +23,10 @@ class Renderer {
         this.renderKeys(maze, camera);
         this.renderDoors(maze, camera);
         
+        // Render environmental puzzles
+        this.renderPressurePlates(maze, camera);
+        this.renderLevers(maze, camera);
+        
         // Render player
         this.renderPlayer(player, camera);
         
@@ -435,7 +439,7 @@ class Renderer {
                 continue;
             }
             
-            this.drawDoor(screenPos.x, screenPos.y, door.color, door.unlocked);
+            this.drawDoor(screenPos.x, screenPos.y, door.color, door.unlocked, door.temporarilyOpen);
         }
     }
     
@@ -479,16 +483,24 @@ class Renderer {
         ctx.fill();
     }
     
-    drawDoor(x, y, color, unlocked) {
+    drawDoor(x, y, color, unlocked, temporarilyOpen = false) {
         const ctx = this.ctx;
         
-        if (unlocked) {
+        if (unlocked || temporarilyOpen) {
             // Draw unlocked door as open doorway with frame
             ctx.fillStyle = COLORS.DOOR_FRAME;
             ctx.fillRect(x, y, 4, TILE_SIZE);
             ctx.fillRect(x + TILE_SIZE - 4, y, 4, TILE_SIZE);
             ctx.fillRect(x, y, TILE_SIZE, 4);
             ctx.fillRect(x, y + TILE_SIZE - 4, TILE_SIZE, 4);
+            
+            // Add visual indicator for temporarily open doors
+            if (temporarilyOpen && !unlocked) {
+                const time = Date.now() / 1000;
+                const pulseIntensity = 0.5 + 0.5 * Math.sin(time * 8); // Fast pulsing
+                ctx.fillStyle = `rgba(255, 255, 0, ${pulseIntensity * 0.6})`; // Yellow glow
+                ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+            }
         } else {
             // Draw locked door
             const doorColor = this.getDoorColor(color);
@@ -691,6 +703,112 @@ class Renderer {
         } else {
             this.ctx.fillRect(x - 2 + legOffset, bodyY + bodyHeight/2 + 7, 1, 2);
             this.ctx.fillRect(x - legOffset, bodyY + bodyHeight/2 + 7, 1, 2);
+        }
+    }
+    
+    renderPressurePlates(maze, camera) {
+        for (const plate of maze.pressurePlates) {
+            const worldX = plate.x * TILE_SIZE;
+            const worldY = plate.y * TILE_SIZE;
+            const screenPos = camera.worldToScreen(worldX, worldY);
+            
+            // Only render if visible
+            if (screenPos.x < -TILE_SIZE || screenPos.x > camera.viewWidth ||
+                screenPos.y < -TILE_SIZE || screenPos.y > camera.viewHeight) {
+                continue;
+            }
+            
+            const centerX = screenPos.x + TILE_SIZE / 2;
+            const centerY = screenPos.y + TILE_SIZE / 2;
+            
+            // Pressure plate base (stone circle)
+            this.ctx.fillStyle = plate.activated ? '#8B4513' : '#666';
+            this.ctx.beginPath();
+            this.ctx.arc(centerX, centerY, 8, 0, Math.PI * 2);
+            this.ctx.fill();
+            
+            // Inner depression
+            this.ctx.fillStyle = plate.activated ? '#654321' : '#444';
+            this.ctx.beginPath();
+            this.ctx.arc(centerX, centerY, 5, 0, Math.PI * 2);
+            this.ctx.fill();
+            
+            // Timer indicator (red when active)
+            if (plate.activated) {
+                const progress = plate.timer / plate.maxTimer;
+                this.ctx.strokeStyle = '#ff0000';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.arc(centerX, centerY, 10, -Math.PI/2, -Math.PI/2 + (Math.PI * 2 * progress));
+                this.ctx.stroke();
+                
+                // Draw connection lines to affected doors
+                this.ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
+                this.ctx.lineWidth = 1;
+                this.ctx.setLineDash([5, 5]);
+                
+                for (const door of plate.connectedDoors) {
+                    const doorWorldX = door.x * TILE_SIZE + TILE_SIZE / 2;
+                    const doorWorldY = door.y * TILE_SIZE + TILE_SIZE / 2;
+                    const doorScreenPos = camera.worldToScreen(doorWorldX, doorWorldY);
+                    
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(centerX, centerY);
+                    this.ctx.lineTo(doorScreenPos.x, doorScreenPos.y);
+                    this.ctx.stroke();
+                }
+                
+                this.ctx.setLineDash([]); // Reset line dash
+            }
+        }
+    }
+    
+    renderLevers(maze, camera) {
+        for (const lever of maze.levers) {
+            const worldX = lever.x * TILE_SIZE;
+            const worldY = lever.y * TILE_SIZE;
+            const screenPos = camera.worldToScreen(worldX, worldY);
+            
+            // Only render if visible
+            if (screenPos.x < -TILE_SIZE || screenPos.x > camera.viewWidth ||
+                screenPos.y < -TILE_SIZE || screenPos.y > camera.viewHeight) {
+                continue;
+            }
+            
+            const centerX = screenPos.x + TILE_SIZE / 2;
+            const centerY = screenPos.y + TILE_SIZE / 2;
+            
+            // Lever base (stone pedestal)
+            this.ctx.fillStyle = '#666';
+            this.ctx.fillRect(centerX - 4, centerY + 4, 8, 6);
+            
+            // Lever handle
+            const leverAngle = lever.activated ? -Math.PI/4 : Math.PI/4;
+            const leverLength = 8;
+            const leverEndX = centerX + Math.cos(leverAngle) * leverLength;
+            const leverEndY = centerY + Math.sin(leverAngle) * leverLength;
+            
+            this.ctx.strokeStyle = lever.activated ? '#8B4513' : '#999';
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath();
+            this.ctx.moveTo(centerX, centerY);
+            this.ctx.lineTo(leverEndX, leverEndY);
+            this.ctx.stroke();
+            
+            // Lever knob
+            this.ctx.fillStyle = lever.activated ? '#654321' : '#777';
+            this.ctx.beginPath();
+            this.ctx.arc(leverEndX, leverEndY, 2, 0, Math.PI * 2);
+            this.ctx.fill();
+            
+            // Interaction hint
+            if (Math.abs(centerX - camera.viewWidth/2) < TILE_SIZE && 
+                Math.abs(centerY - camera.viewHeight/2) < TILE_SIZE) {
+                this.ctx.fillStyle = 'rgba(255, 255, 0, 0.7)';
+                this.ctx.font = '12px monospace';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('E', centerX, centerY - 15);
+            }
         }
     }
     

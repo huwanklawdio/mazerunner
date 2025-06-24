@@ -8,6 +8,8 @@ class Maze {
         this.treasures = []; // Array of treasure positions {x, y, type, collected}
         this.keys = []; // Array of key positions {x, y, color, collected}
         this.doors = []; // Array of door positions {x, y, color, unlocked}
+        this.pressurePlates = []; // Array of pressure plates {x, y, activated, connectedDoors, timer}
+        this.levers = []; // Array of levers {x, y, activated, affectedCells}
         this.startX = 1;
         this.startY = 1;
         this.endX = width - 2;
@@ -77,6 +79,10 @@ class Maze {
         
         // Place keys and doors strategically
         this.placeKeysAndDoors();
+        
+        // Place environmental puzzles
+        this.placePressurePlates();
+        this.placeLevers();
         
         // Ensure the puzzle is solvable
         this.ensureSolvability();
@@ -220,7 +226,7 @@ class Maze {
         
         // Check for locked doors (act as walls)
         const door = this.getDoorAt(x, y);
-        if (door && !door.unlocked) {
+        if (door && !door.unlocked && !door.temporarilyOpen) {
             return true;
         }
         
@@ -490,6 +496,157 @@ class Maze {
             return door;
         }
         return null;
+    }
+    
+    placePressurePlates() {
+        const plateCount = Math.max(1, Math.floor((this.width * this.height) / 200)); // 1 plate per ~200 tiles, minimum 1
+        const locations = this.findGoodFloorTiles();
+        
+        for (let i = 0; i < plateCount && locations.length > 0; i++) {
+            const index = Math.floor(Math.random() * locations.length);
+            const location = locations[index];
+            locations.splice(index, 1);
+            
+            // Find doors that this plate will control
+            const connectedDoors = this.findNearbyDoors(location.x, location.y, 8);
+            
+            const plate = {
+                x: location.x,
+                y: location.y,
+                activated: false,
+                connectedDoors: connectedDoors,
+                timer: 0,
+                maxTimer: 300 // 5 seconds at 60fps
+            };
+            
+            this.pressurePlates.push(plate);
+            console.log('Placed pressure plate at', location.x, location.y, 'with', connectedDoors.length, 'connected doors');
+        }
+    }
+    
+    placeLevers() {
+        const leverCount = Math.floor((this.width * this.height) / 300); // 1 lever per ~300 tiles
+        const locations = this.findGoodFloorTiles();
+        
+        for (let i = 0; i < leverCount && locations.length > 0; i++) {
+            const index = Math.floor(Math.random() * locations.length);
+            const location = locations[index];
+            locations.splice(index, 1);
+            
+            // Find cells that this lever will affect
+            const affectedCells = this.findAffectedCells(location.x, location.y);
+            
+            this.levers.push({
+                x: location.x,
+                y: location.y,
+                activated: false,
+                affectedCells: affectedCells
+            });
+        }
+    }
+    
+    findGoodFloorTiles() {
+        const tiles = [];
+        for (let y = 2; y < this.height - 2; y++) {
+            for (let x = 2; x < this.width - 2; x++) {
+                if (this.grid[y][x] === 0 && // Floor tile
+                    !this.hasKeyAt(x, y) && // No key here
+                    !this.getTreasureAt(x, y) && // No treasure here
+                    Math.abs(x - this.startX) + Math.abs(y - this.startY) > 3 && // Not too close to start
+                    Math.abs(x - this.endX) + Math.abs(y - this.endY) > 3) { // Not too close to end
+                    tiles.push({ x, y });
+                }
+            }
+        }
+        return tiles;
+    }
+    
+    findNearbyDoors(x, y, maxDistance) {
+        const nearbyDoors = [];
+        for (const door of this.doors) {
+            const distance = Math.abs(door.x - x) + Math.abs(door.y - y);
+            if (distance <= maxDistance) {
+                nearbyDoors.push(door);
+            }
+        }
+        return nearbyDoors;
+    }
+    
+    findAffectedCells(x, y) {
+        const cells = [];
+        // Create a small area around the lever that can be toggled between wall/floor
+        for (let dy = -2; dy <= 2; dy++) {
+            for (let dx = -2; dx <= 2; dx++) {
+                const cellX = x + dx;
+                const cellY = y + dy;
+                if (cellX > 0 && cellX < this.width - 1 && 
+                    cellY > 0 && cellY < this.height - 1 &&
+                    Math.abs(dx) + Math.abs(dy) <= 2) { // Manhattan distance
+                    cells.push({ x: cellX, y: cellY, originalState: this.grid[cellY][cellX] });
+                }
+            }
+        }
+        return cells;
+    }
+    
+    getPressurePlateAt(x, y) {
+        return this.pressurePlates.find(plate => plate.x === x && plate.y === y);
+    }
+    
+    getLeverAt(x, y) {
+        return this.levers.find(lever => lever.x === x && lever.y === y);
+    }
+    
+    activatePressurePlate(x, y) {
+        const plate = this.getPressurePlateAt(x, y);
+        if (plate && !plate.activated) {
+            plate.activated = true;
+            plate.timer = plate.maxTimer;
+            
+            // Open connected doors temporarily
+            for (const door of plate.connectedDoors) {
+                door.temporarilyOpen = true;
+            }
+            return plate;
+        }
+        return null;
+    }
+    
+    toggleLever(x, y) {
+        const lever = this.getLeverAt(x, y);
+        if (lever) {
+            lever.activated = !lever.activated;
+            
+            // Toggle affected cells
+            for (const cell of lever.affectedCells) {
+                if (lever.activated) {
+                    // When lever is on, make walls into floors (create passages)
+                    if (cell.originalState === 1) {
+                        this.grid[cell.y][cell.x] = 0;
+                    }
+                } else {
+                    // When lever is off, restore original state
+                    this.grid[cell.y][cell.x] = cell.originalState;
+                }
+            }
+            return lever;
+        }
+        return null;
+    }
+    
+    updatePressurePlates() {
+        for (const plate of this.pressurePlates) {
+            if (plate.activated && plate.timer > 0) {
+                plate.timer--;
+                if (plate.timer <= 0) {
+                    plate.activated = false;
+                    // Close connected doors
+                    for (const door of plate.connectedDoors) {
+                        door.temporarilyOpen = false;
+                    }
+                }
+            }
+        }
     }
     
     ensureSolvability() {
