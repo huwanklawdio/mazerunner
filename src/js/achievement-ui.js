@@ -140,6 +140,11 @@ class AchievementUI {
     }
     
     showAchievementNotification(achievement) {
+        // Show both the parchment notification and the existing UI notification
+        if (window.notificationSystem) {
+            window.notificationSystem.showAchievement(achievement.name);
+        }
+        
         this.notificationQueue.push(achievement);
         this.processNotificationQueue();
     }

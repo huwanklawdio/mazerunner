@@ -299,6 +299,13 @@ class Game {
                 this.completeGame();
                 this.audio.playVictory();
                 
+                // Show level complete notification
+                const stats = {
+                    time: this.formatTime(this.currentTime),
+                    steps: this.stepCount
+                };
+                window.notificationSystem.showLevelComplete(stats);
+                
                 // Create victory particles
                 this.particleSystem.createVictoryEffect(
                     this.maze.endX * TILE_SIZE + TILE_SIZE / 2,
@@ -409,6 +416,11 @@ class Game {
             if (this.keyPressed['ArrowUp']) {
                 attemptedMove = true;
                 direction = 'up';
+                // Check if we're trying to move into a locked door
+                const targetX = this.player.x;
+                const targetY = this.player.y - 1;
+                this.checkDoorUnlock(targetX, targetY);
+                
                 const moveResult = this.player.move(0, -1, this.maze);
                 moved = moveResult.success || moveResult === true;
                 if (moved && moveResult.newX !== undefined) {
@@ -417,6 +429,11 @@ class Game {
             } else if (this.keyPressed['ArrowDown']) {
                 attemptedMove = true;
                 direction = 'down';
+                // Check if we're trying to move into a locked door
+                const targetX = this.player.x;
+                const targetY = this.player.y + 1;
+                this.checkDoorUnlock(targetX, targetY);
+                
                 const moveResult = this.player.move(0, 1, this.maze);
                 moved = moveResult.success || moveResult === true;
                 if (moved && moveResult.newX !== undefined) {
@@ -425,6 +442,11 @@ class Game {
             } else if (this.keyPressed['ArrowLeft']) {
                 attemptedMove = true;
                 direction = 'left';
+                // Check if we're trying to move into a locked door
+                const targetX = this.player.x - 1;
+                const targetY = this.player.y;
+                this.checkDoorUnlock(targetX, targetY);
+                
                 const moveResult = this.player.move(-1, 0, this.maze);
                 moved = moveResult.success || moveResult === true;
                 if (moved && moveResult.newX !== undefined) {
@@ -433,6 +455,11 @@ class Game {
             } else if (this.keyPressed['ArrowRight']) {
                 attemptedMove = true;
                 direction = 'right';
+                // Check if we're trying to move into a locked door
+                const targetX = this.player.x + 1;
+                const targetY = this.player.y;
+                this.checkDoorUnlock(targetX, targetY);
+                
                 const moveResult = this.player.move(1, 0, this.maze);
                 moved = moveResult.success || moveResult === true;
                 if (moved && moveResult.newX !== undefined) {
@@ -444,7 +471,11 @@ class Game {
             if (this.keyPressed['KeyE']) {
                 const lever = this.maze.getLeverAt(this.player.x, this.player.y);
                 if (lever) {
-                    this.maze.toggleLever(this.player.x, this.player.y);
+                    const result = this.maze.toggleLever(this.player.x, this.player.y);
+                    if (result) {
+                        // Show parchment notification for puzzle solved
+                        window.notificationSystem.showPuzzleSolved('lever');
+                    }
                     this.audio.playKeyCollect(); // Reuse key collection sound for lever
                 }
             }
@@ -511,7 +542,29 @@ class Game {
     checkPressurePlateActivation(x, y) {
         const plate = this.maze.getPressurePlateAt(x, y);
         if (plate && !plate.activated) {
-            this.maze.activatePressurePlate(x, y, this.particleSystem);
+            const result = this.maze.activatePressurePlate(x, y, this.particleSystem);
+            if (result) {
+                // Show parchment notification for puzzle solved
+                window.notificationSystem.showPuzzleSolved('pressure_plate');
+            }
+        }
+    }
+    
+    checkDoorUnlock(x, y) {
+        const door = this.maze.tryUnlockDoor(x, y, this.collectedKeys);
+        if (door) {
+            // Create door unlock particles
+            this.particleSystem.createDoorUnlock(
+                x * TILE_SIZE + TILE_SIZE / 2,
+                y * TILE_SIZE + TILE_SIZE / 2,
+                door.color
+            );
+            
+            // Show parchment notification
+            window.notificationSystem.showDoorUnlocked(door.color);
+            
+            // Play door unlock sound
+            this.audio.playDoorUnlock();
         }
     }
     
@@ -561,6 +614,9 @@ class Game {
         // Play game start sound
         this.audio.resume();
         this.audio.playGameStart();
+        
+        // Show quest start notification
+        window.notificationSystem.showQuestStart(`${this.difficultyConfig.name} Dungeon`);
     }
     
     completeGame() {
@@ -678,6 +734,11 @@ class Game {
                 treasure.type
             );
             
+            // Show parchment notification
+            const treasureName = treasure.type === 'chest' ? 'Treasure Chest' : 
+                               treasure.type === 'gem' ? 'Precious Gem' : 'Gold Coins';
+            window.notificationSystem.showTreasureCollected(treasureName, treasure.value);
+            
             // Play treasure collection sound
             this.audio.playTreasureCollect();
         }
@@ -694,6 +755,9 @@ class Game {
                 this.player.y * TILE_SIZE + TILE_SIZE / 2,
                 key.color
             );
+            
+            // Show parchment notification
+            window.notificationSystem.showKeyCollected(key.color);
             
             // Play key collection sound
             this.audio.playKeyCollect();

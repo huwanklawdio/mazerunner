@@ -1,0 +1,229 @@
+/* Parchment-style notification system */
+
+.parchment-notifications {
+    position: fixed;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    pointer-events: none;
+    width: 100%;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.parchment-notification {
+    position: relative;
+    background: linear-gradient(135deg, #f4e8d0 0%, #e8dcc0 50%, #f4e8d0 100%);
+    border: 2px solid #8B6914;
+    border-radius: 3px;
+    padding: 20px 30px;
+    min-width: 300px;
+    max-width: 100%;
+    box-shadow: 
+        0 0 20px rgba(0, 0, 0, 0.3),
+        inset 0 0 20px rgba(139, 105, 20, 0.1),
+        0 5px 15px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transform: translateY(-20px) scale(0.9);
+    transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    pointer-events: auto;
+    
+    /* Parchment texture effect */
+    background-image: 
+        linear-gradient(135deg, #f4e8d0 0%, #e8dcc0 50%, #f4e8d0 100%),
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 10px,
+            rgba(139, 105, 20, 0.03) 10px,
+            rgba(139, 105, 20, 0.03) 20px
+        );
+    
+    /* Aged paper effect */
+    filter: sepia(0.1);
+}
+
+.parchment-notification.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.parchment-notification.hide {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+    transition: all 0.3s ease-in;
+}
+
+/* Parchment edges for torn effect */
+.parchment-edge-top,
+.parchment-edge-bottom {
+    position: absolute;
+    width: 100%;
+    height: 8px;
+    left: 0;
+    pointer-events: none;
+}
+
+.parchment-edge-top {
+    top: -2px;
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 10"><path d="M0,5 Q10,0 20,5 T40,5 T60,5 T80,5 T100,5 L100,10 L0,10 Z" fill="%23f4e8d0" stroke="%238B6914" stroke-width="0.5"/></svg>') repeat-x;
+    background-size: 100px 10px;
+}
+
+.parchment-edge-bottom {
+    bottom: -2px;
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 10"><path d="M0,5 Q10,10 20,5 T40,5 T60,5 T80,5 T100,5 L100,0 L0,0 Z" fill="%23f4e8d0" stroke="%238B6914" stroke-width="0.5"/></svg>') repeat-x;
+    background-size: 100px 10px;
+}
+
+.parchment-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    position: relative;
+    z-index: 1;
+}
+
+.notification-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    animation: iconBounce 0.5s ease-out;
+}
+
+@keyframes iconBounce {
+    0% { transform: scale(0) rotate(-180deg); }
+    50% { transform: scale(1.2) rotate(10deg); }
+    100% { transform: scale(1) rotate(0deg); }
+}
+
+.notification-message {
+    font-family: 'MedievalSharp', 'Cinzel', Georgia, serif;
+    font-size: 16px;
+    color: #3d2914;
+    text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.5);
+    line-height: 1.4;
+    font-weight: 600;
+}
+
+/* Type-specific styles */
+.parchment-info {
+    border-color: #8B6914;
+}
+
+.parchment-success {
+    border-color: #2d5016;
+    background: linear-gradient(135deg, #e8f4d0 0%, #d0e8c0 50%, #e8f4d0 100%);
+}
+
+.parchment-success .notification-message {
+    color: #2d5016;
+}
+
+.parchment-warning {
+    border-color: #8B4513;
+    background: linear-gradient(135deg, #f4e0d0 0%, #e8d0c0 50%, #f4e0d0 100%);
+}
+
+.parchment-warning .notification-message {
+    color: #8B4513;
+}
+
+.parchment-quest {
+    border-color: #4B0082;
+    background: linear-gradient(135deg, #e8e0f4 0%, #d0c0e8 50%, #e8e0f4 100%);
+    box-shadow: 
+        0 0 30px rgba(75, 0, 130, 0.3),
+        inset 0 0 20px rgba(75, 0, 130, 0.1),
+        0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.parchment-quest .notification-message {
+    color: #4B0082;
+}
+
+.parchment-treasure {
+    border-color: #FFD700;
+    background: linear-gradient(135deg, #fff8dc 0%, #ffd700 50%, #fff8dc 100%);
+    box-shadow: 
+        0 0 30px rgba(255, 215, 0, 0.5),
+        inset 0 0 20px rgba(255, 215, 0, 0.2),
+        0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.parchment-treasure .notification-message {
+    color: #B8860B;
+}
+
+.parchment-key {
+    border-color: #8B4513;
+    background: linear-gradient(135deg, #f4f0e8 0%, #e8e0d0 50%, #f4f0e8 100%);
+}
+
+.parchment-achievement {
+    border-color: #FFD700;
+    background: linear-gradient(135deg, #fff8dc 0%, #ffd700 30%, #fff8dc 60%, #ffd700 100%);
+    box-shadow: 
+        0 0 40px rgba(255, 215, 0, 0.6),
+        inset 0 0 30px rgba(255, 215, 0, 0.3),
+        0 5px 20px rgba(0, 0, 0, 0.4);
+    animation: achievementGlow 2s ease-in-out infinite;
+}
+
+@keyframes achievementGlow {
+    0%, 100% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.6), inset 0 0 30px rgba(255, 215, 0, 0.3), 0 5px 20px rgba(0, 0, 0, 0.4); }
+    50% { box-shadow: 0 0 60px rgba(255, 215, 0, 0.8), inset 0 0 40px rgba(255, 215, 0, 0.4), 0 5px 25px rgba(0, 0, 0, 0.5); }
+}
+
+.parchment-puzzle {
+    border-color: #4682B4;
+    background: linear-gradient(135deg, #e0f0f4 0%, #c0d8e8 50%, #e0f0f4 100%);
+}
+
+.parchment-puzzle .notification-message {
+    color: #4682B4;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .parchment-notifications {
+        max-width: 90%;
+        top: 60px;
+    }
+    
+    .parchment-notification {
+        min-width: 250px;
+        padding: 15px 20px;
+    }
+    
+    .notification-message {
+        font-size: 14px;
+    }
+    
+    .notification-icon {
+        font-size: 20px;
+    }
+}
+
+/* Animation for multiple notifications */
+.parchment-notification:not(:first-child) {
+    margin-top: -10px;
+}
+
+/* Stacking effect */
+.parchment-notifications .parchment-notification:nth-child(2) {
+    transform: translateY(0) scale(0.95);
+    opacity: 0.8;
+}
+
+.parchment-notifications .parchment-notification:nth-child(3) {
+    transform: translateY(0) scale(0.9);
+    opacity: 0.6;
+}
+
+/* Medieval font import fallback */
+@import url('https://fonts.googleapis.com/css2?family=MedievalSharp&family=Cinzel:wght@400;600&display=swap');

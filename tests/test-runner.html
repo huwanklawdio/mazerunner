@@ -115,6 +115,8 @@
             <li>✅ Environmental Puzzles (Pressure plates, levers)</li>
             <li>✅ Performance Regression (FPS thresholds)</li>
             <li>✅ Memory Stability (Long-term usage)</li>
+            <li>📜 Notification System (Parchment notifications and queue)</li>
+            <li>🔍 Solvability Validation (All difficulty levels)</li>
         </ul>
     </div>
     
@@ -124,6 +126,8 @@
         <button id="runSpatialTests" class="test-button">🔍 Spatial Hashing Only</button>
         <button id="runParticleTests" class="test-button">🎆 Particle System Only</button>
         <button id="runPerformanceTests" class="test-button">⚡ Performance Only</button>
+        <button id="runNotificationTests" class="test-button" style="background: #8B6914;">📜 Notification System</button>
+        <button id="runSolvabilityTests" class="test-button" style="background: #6f42c1;">🔍 Solvability Tests</button>
         <button id="clearConsole" class="test-button" style="background: #666;">🧹 Clear Console</button>
     </div>
     
@@ -159,6 +163,8 @@ Click "Run All Tests" to begin comprehensive validation...
     <!-- Load test suites -->
     <script src="critical-validation.js"></script>
     <script src="performance-validation.js"></script>
+    <script src="notification-tests.js"></script>
+    <script src="solvability-tests.js"></script>
     
     <script>
         // Test runner UI controller
@@ -195,6 +201,14 @@ Click "Run All Tests" to begin comprehensive validation...
                 
                 document.getElementById('runPerformanceTests').addEventListener('click', () => {
                     this.runSpecificTest('performance');
+                });
+                
+                document.getElementById('runNotificationTests').addEventListener('click', () => {
+                    this.runNotificationTests();
+                });
+                
+                document.getElementById('runSolvabilityTests').addEventListener('click', () => {
+                    this.runSolvabilityTests();
                 });
                 
                 document.getElementById('clearConsole').addEventListener('click', () => {
@@ -335,6 +349,89 @@ Click "Run All Tests" to begin comprehensive validation...
                     this.updateProgressBar(100);
                 } catch (error) {
                     this.setStatus('Critical tests crashed', 'failed');
+                    this.appendToConsole(`CRITICAL ERROR: ${error.message}`);
+                } finally {
+                    this.enableButtons();
+                }
+            }
+            
+            async runNotificationTests() {
+                try {
+                    this.disableButtons();
+                    this.clearConsole();
+                    this.setStatus('Running notification system tests...', 'running');
+                    this.currentProgress = 0;
+                    
+                    // Need to load required dependencies first
+                    if (!window.notificationSystem) {
+                        // Load notification system dependencies
+                        await this.loadNotificationDependencies();
+                    }
+                    
+                    const notificationTests = new NotificationTestSuite();
+                    await notificationTests.runAllTests();
+                    
+                    const hasErrors = notificationTests.errors.length > 0;
+                    const hasFailures = notificationTests.testResults.some(t => t.status === 'FAIL');
+                    
+                    if (hasErrors || hasFailures) {
+                        this.setStatus('Notification tests completed with issues', 'failed');
+                    } else {
+                        this.setStatus('All notification tests passed!', 'passed');
+                    }
+                    
+                    this.updateProgressBar(100);
+                } catch (error) {
+                    this.setStatus('Notification tests crashed', 'failed');
+                    this.appendToConsole(`CRITICAL ERROR: ${error.message}`);
+                } finally {
+                    this.enableButtons();
+                }
+            }
+            
+            async loadNotificationDependencies() {
+                // Load CSS if not already loaded
+                if (!document.querySelector('link[href*="notifications.css"]')) {
+                    const link = document.createElement('link');
+                    link.rel = 'stylesheet';
+                    link.href = '../src/css/notifications.css';
+                    document.head.appendChild(link);
+                }
+                
+                // Load JS if not already loaded
+                if (!window.notificationSystem) {
+                    return new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = '../src/js/notifications.js';
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+                }
+            }
+            
+            async runSolvabilityTests() {
+                try {
+                    this.disableButtons();
+                    this.clearConsole();
+                    this.setStatus('Running solvability tests...', 'running');
+                    this.currentProgress = 0;
+                    
+                    const solvabilityTests = new SolvabilityTestSuite();
+                    await solvabilityTests.runAllTests();
+                    
+                    const hasErrors = solvabilityTests.errors.length > 0;
+                    const hasFailures = solvabilityTests.testResults.some(t => t.status === 'FAIL');
+                    
+                    if (hasErrors || hasFailures) {
+                        this.setStatus('Solvability tests completed with issues', 'failed');
+                    } else {
+                        this.setStatus('All solvability tests passed!', 'passed');
+                    }
+                    
+                    this.updateProgressBar(100);
+                } catch (error) {
+                    this.setStatus('Solvability tests crashed', 'failed');
                     this.appendToConsole(`CRITICAL ERROR: ${error.message}`);
                 } finally {
                     this.enableButtons();
