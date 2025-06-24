@@ -110,6 +110,20 @@ class AudioSystem {
         }, 100);
     }
     
+    // Play treasure collection sound
+    playTreasureCollect() {
+        if (!this.enabled) return;
+        
+        // Pleasant chime sound
+        this.playTone(523.25, 0.2, 'triangle', 0.3); // C5
+        setTimeout(() => {
+            this.playTone(659.25, 0.2, 'triangle', 0.25); // E5
+        }, 50);
+        setTimeout(() => {
+            this.playTone(783.99, 0.3, 'sine', 0.2); // G5
+        }, 100);
+    }
+    
     // Create white noise for ambient effects
     playWhiteNoise(duration, volume = 0.05) {
         if (!this.enabled || !this.audioContext) return;

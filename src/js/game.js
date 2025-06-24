@@ -17,6 +17,7 @@ class Game {
         this.startTime = 0;
         this.currentTime = 0;
         this.stepCount = 0;
+        this.treasureScore = 0;
         this.stats = this.loadStats();
         
         // Achievement tracking
@@ -252,6 +253,9 @@ class Game {
             this.player.update(deltaTime, this.maze);
             this.camera.update(this.player.x * TILE_SIZE, this.player.y * TILE_SIZE);
             
+            // Check for treasure collection after player position update
+            this.checkTreasureCollection();
+            
             // Update timer
             this.currentTime = (Date.now() - this.startTime) / 1000;
             this.updateTimerDisplay();
@@ -425,9 +429,11 @@ class Game {
         this.startTime = Date.now();
         this.currentTime = 0;
         this.stepCount = 0;
+        this.treasureScore = 0;
         this.wallCollisions = 0;
         this.updateTimerDisplay();
         this.updateStepsDisplay();
+        this.updateTreasureDisplay();
         
         // Reset mini-map
         this.miniMap.reset();
@@ -509,6 +515,33 @@ class Game {
         const stepsElement = document.getElementById('steps');
         if (stepsElement) {
             stepsElement.textContent = this.stepCount.toString();
+        }
+    }
+    
+    updateTreasureDisplay() {
+        const treasureElement = document.getElementById('treasure');
+        if (treasureElement) {
+            treasureElement.textContent = this.treasureScore.toString();
+        }
+    }
+    
+    checkTreasureCollection() {
+        // Use actual player grid position, not render position
+        const treasure = this.maze.collectTreasure(this.player.x, this.player.y);
+        
+        if (treasure) {
+            this.treasureScore += treasure.value;
+            this.updateTreasureDisplay();
+            
+            // Create treasure collection particles at player's world position
+            this.particleSystem.createTreasureCollection(
+                this.player.x * TILE_SIZE + TILE_SIZE / 2,
+                this.player.y * TILE_SIZE + TILE_SIZE / 2,
+                treasure.type
+            );
+            
+            // Play treasure collection sound
+            this.audio.playTreasureCollect();
         }
     }
     

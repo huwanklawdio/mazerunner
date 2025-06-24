@@ -5,6 +5,7 @@ class Maze {
         this.height = height;
         this.grid = [];
         this.torches = []; // Array of torch positions {x, y, side}
+        this.treasures = []; // Array of treasure positions {x, y, type, collected}
         this.startX = 1;
         this.startY = 1;
         this.endX = width - 2;
@@ -68,6 +69,9 @@ class Maze {
         
         // Place torches along walls
         this.placeTorches();
+        
+        // Place treasures in accessible locations
+        this.placeTreasures();
     }
     
     getUnvisitedNeighbors(x, y) {
@@ -210,5 +214,108 @@ class Maze {
     
     isFloor(x, y) {
         return !this.isWall(x, y);
+    }
+    
+    placeTreasures() {
+        this.treasures = [];
+        const treasureTypes = ['coin', 'gem', 'chest'];
+        const treasureWeights = {
+            'coin': 0.6,     // 60% coins (common)
+            'gem': 0.3,      // 30% gems (uncommon) 
+            'chest': 0.1     // 10% chests (rare)
+        };
+        
+        // Calculate treasure density based on maze size
+        const totalFloorTiles = this.countFloorTiles();
+        const treasureDensity = Math.max(0.05, Math.min(0.15, 8 / totalFloorTiles)); // 5-15% of floor tiles
+        const numTreasures = Math.floor(totalFloorTiles * treasureDensity);
+        
+        // Find all potential treasure locations (floor tiles)
+        const candidateLocations = [];
+        for (let y = 1; y < this.height - 1; y++) {
+            for (let x = 1; x < this.width - 1; x++) {
+                if (this.grid[y][x] === 0) { // Floor tile
+                    candidateLocations.push({ x, y });
+                }
+            }
+        }
+        
+        // Place treasures randomly, avoiding start/end positions
+        const minDistanceFromStartEnd = 3;
+        let placedTreasures = 0;
+        
+        while (placedTreasures < numTreasures && candidateLocations.length > 0) {
+            const randomIndex = Math.floor(Math.random() * candidateLocations.length);
+            const location = candidateLocations[randomIndex];
+            
+            // Check distance from start and end
+            const distanceFromStart = Math.abs(location.x - this.startX) + Math.abs(location.y - this.startY);
+            const distanceFromEnd = Math.abs(location.x - this.endX) + Math.abs(location.y - this.endY);
+            
+            if (distanceFromStart >= minDistanceFromStartEnd && distanceFromEnd >= minDistanceFromStartEnd) {
+                // Select treasure type based on weights
+                const treasureType = this.selectTreasureType(treasureWeights);
+                
+                this.treasures.push({
+                    x: location.x,
+                    y: location.y,
+                    type: treasureType,
+                    collected: false,
+                    value: this.getTreasureValue(treasureType)
+                });
+                
+                placedTreasures++;
+            }
+            
+            // Remove this location from candidates
+            candidateLocations.splice(randomIndex, 1);
+        }
+    }
+    
+    countFloorTiles() {
+        let count = 0;
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                if (this.grid[y][x] === 0) count++;
+            }
+        }
+        return count;
+    }
+    
+    selectTreasureType(weights) {
+        const rand = Math.random();
+        let cumulative = 0;
+        
+        for (const [type, weight] of Object.entries(weights)) {
+            cumulative += weight;
+            if (rand <= cumulative) {
+                return type;
+            }
+        }
+        return 'coin'; // Fallback
+    }
+    
+    getTreasureValue(type) {
+        const values = {
+            'coin': 10,
+            'gem': 50,
+            'chest': 100
+        };
+        return values[type] || 10;
+    }
+    
+    getTreasureAt(x, y) {
+        return this.treasures.find(treasure => 
+            treasure.x === x && treasure.y === y && !treasure.collected
+        );
+    }
+    
+    collectTreasure(x, y) {
+        const treasure = this.getTreasureAt(x, y);
+        if (treasure) {
+            treasure.collected = true;
+            return treasure;
+        }
+        return null;
     }
 }

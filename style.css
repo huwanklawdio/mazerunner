@@ -197,7 +197,13 @@ body {
     font-size: 16px;
     font-weight: bold;
     color: #ffd700;
-    text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+}
+
+.treasure-display {
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffd700;
+    text-shadow: 0 0 4px rgba(255, 215, 0, 0.5);
 }
 
 .stats-display {

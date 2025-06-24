@@ -91,7 +91,17 @@ const COLORS = {
     
     // UI colors
     COMPASS_BG: 'rgba(0, 0, 0, 0.8)',
-    COMPASS_BORDER: '#daa520'
+    COMPASS_BORDER: '#daa520',
+    
+    // Treasure colors
+    TREASURE_GOLD: '#ffd700',
+    TREASURE_SILVER: '#c0c0c0',
+    TREASURE_BRONZE: '#cd7f32',
+    TREASURE_GEM_RED: '#dc143c',
+    TREASURE_GEM_BLUE: '#4169e1',
+    TREASURE_GEM_GREEN: '#32cd32',
+    TREASURE_CHEST: '#8b4513',
+    TREASURE_GLOW: '#ffed4e'
 };
 
 // Utility functions

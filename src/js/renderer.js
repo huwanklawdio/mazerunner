@@ -16,6 +16,9 @@ class Renderer {
         // Render torches
         this.renderTorches(maze, camera);
         
+        // Render treasures
+        this.renderTreasures(maze, camera);
+        
         // Render player
         this.renderPlayer(player, camera);
         
@@ -252,6 +255,148 @@ class Renderer {
         ctx.beginPath();
         ctx.ellipse(torchX, torchY - 8, 8, 10, 0, 0, Math.PI * 2);
         ctx.fill();
+    }
+    
+    renderTreasures(maze, camera) {
+        const time = Date.now() / 1000;
+        
+        for (const treasure of maze.treasures) {
+            if (treasure.collected) continue;
+            
+            const worldX = treasure.x * TILE_SIZE;
+            const worldY = treasure.y * TILE_SIZE;
+            const screenPos = camera.worldToScreen(worldX, worldY);
+            
+            // Only render if treasure is visible on screen
+            if (screenPos.x < -TILE_SIZE || screenPos.x > camera.viewWidth ||
+                screenPos.y < -TILE_SIZE || screenPos.y > camera.viewHeight) {
+                continue;
+            }
+            
+            this.drawTreasure(screenPos.x, screenPos.y, treasure.type, time);
+        }
+    }
+    
+    drawTreasure(x, y, type, time) {
+        const ctx = this.ctx;
+        const centerX = x + TILE_SIZE / 2;
+        const centerY = y + TILE_SIZE / 2;
+        
+        // Add gentle bobbing animation
+        const bobOffset = Math.sin(time * 2) * 1;
+        const adjustedY = centerY + bobOffset;
+        
+        // Add glow effect
+        const glowIntensity = 0.3 + 0.2 * Math.sin(time * 3);
+        ctx.fillStyle = `rgba(255, 237, 78, ${glowIntensity})`;
+        ctx.beginPath();
+        ctx.arc(centerX, adjustedY, 12, 0, Math.PI * 2);
+        ctx.fill();
+        
+        switch (type) {
+            case 'coin':
+                this.drawCoin(centerX, adjustedY, time);
+                break;
+            case 'gem':
+                this.drawGem(centerX, adjustedY, time);
+                break;
+            case 'chest':
+                this.drawTreasureChest(centerX, adjustedY, time);
+                break;
+        }
+    }
+    
+    drawCoin(x, y, time) {
+        const ctx = this.ctx;
+        const rotation = time * 2; // Spinning animation
+        const coinWidth = Math.abs(Math.cos(rotation)) * 8 + 2; // Perspective effect
+        
+        // Outer ring (gold)
+        ctx.fillStyle = COLORS.TREASURE_GOLD;
+        ctx.beginPath();
+        ctx.ellipse(x, y, coinWidth, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Inner ring (darker gold)
+        ctx.fillStyle = '#b8860b';
+        ctx.beginPath();
+        ctx.ellipse(x, y, coinWidth * 0.7, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Center highlight
+        ctx.fillStyle = COLORS.TREASURE_GOLD;
+        ctx.beginPath();
+        ctx.ellipse(x, y, coinWidth * 0.3, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    
+    drawGem(x, y, time) {
+        const ctx = this.ctx;
+        const sparkle = Math.sin(time * 4) * 0.3 + 0.7; // Sparkling effect
+        const gemColors = [COLORS.TREASURE_GEM_RED, COLORS.TREASURE_GEM_BLUE, COLORS.TREASURE_GEM_GREEN];
+        const colorIndex = Math.floor(time * 0.5) % gemColors.length;
+        
+        ctx.save();
+        ctx.globalAlpha = sparkle;
+        
+        // Gem body (diamond shape)
+        ctx.fillStyle = gemColors[colorIndex];
+        ctx.beginPath();
+        ctx.moveTo(x, y - 6);      // Top
+        ctx.lineTo(x + 4, y - 2);  // Top right
+        ctx.lineTo(x + 3, y + 4);  // Bottom right
+        ctx.lineTo(x, y + 6);      // Bottom
+        ctx.lineTo(x - 3, y + 4);  // Bottom left
+        ctx.lineTo(x - 4, y - 2);  // Top left
+        ctx.closePath();
+        ctx.fill();
+        
+        // Gem highlight
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(x - 1, y - 4);
+        ctx.lineTo(x + 1, y - 4);
+        ctx.lineTo(x, y - 1);
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.restore();
+    }
+    
+    drawTreasureChest(x, y, time) {
+        const ctx = this.ctx;
+        const bob = Math.sin(time * 1.5) * 0.5;
+        const chestY = y + bob;
+        
+        // Chest base
+        ctx.fillStyle = COLORS.TREASURE_CHEST;
+        ctx.fillRect(x - 8, chestY, 16, 10);
+        
+        // Chest lid
+        ctx.fillStyle = '#a0522d';
+        ctx.fillRect(x - 8, chestY - 6, 16, 6);
+        
+        // Chest lock
+        ctx.fillStyle = COLORS.TREASURE_GOLD;
+        ctx.fillRect(x - 2, chestY - 3, 4, 4);
+        
+        // Metal bands
+        ctx.fillStyle = '#696969';
+        ctx.fillRect(x - 8, chestY + 2, 16, 1);
+        ctx.fillRect(x - 8, chestY + 6, 16, 1);
+        
+        // Sparkles around chest
+        const sparkleCount = 6;
+        for (let i = 0; i < sparkleCount; i++) {
+            const angle = (i / sparkleCount) * Math.PI * 2 + time * 2;
+            const sparkleX = x + Math.cos(angle) * 12;
+            const sparkleY = chestY + Math.sin(angle) * 8;
+            
+            ctx.fillStyle = COLORS.TREASURE_GOLD;
+            ctx.beginPath();
+            ctx.arc(sparkleX, sparkleY, 1, 0, Math.PI * 2);
+            ctx.fill();
+        }
     }
     
     renderPlayer(player, camera) {

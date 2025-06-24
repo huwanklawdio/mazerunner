@@ -137,6 +137,40 @@ class ParticleSystem {
         }
     }
     
+    // Treasure collection particles
+    createTreasureCollection(x, y, treasureType) {
+        const particleCount = treasureType === 'chest' ? 20 : (treasureType === 'gem' ? 15 : 10);
+        let color = COLORS.TREASURE_GOLD;
+        
+        // Set color based on treasure type
+        if (treasureType === 'gem') {
+            const gemColors = [COLORS.TREASURE_GEM_RED, COLORS.TREASURE_GEM_BLUE, COLORS.TREASURE_GEM_GREEN];
+            color = gemColors[Math.floor(Math.random() * gemColors.length)];
+        } else if (treasureType === 'chest') {
+            color = COLORS.TREASURE_GOLD;
+        }
+        
+        for (let i = 0; i < particleCount; i++) {
+            const angle = (Math.PI * 2 / particleCount) * i + Math.random() * 0.5;
+            const speed = 1 + Math.random() * 3;
+            
+            const particle = new Particle(
+                x + (Math.random() - 0.5) * 8,
+                y + (Math.random() - 0.5) * 8,
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed - 1, // Upward bias
+                800 + Math.random() * 400, // 800-1200ms life
+                color,
+                2 + Math.random() * 3
+            );
+            
+            particle.gravity = -0.05; // Float upward
+            particle.friction = 0.98;
+            
+            this.particles.push(particle);
+        }
+    }
+    
     // Portal effect for start/end positions
     createPortalEffect(x, y, color) {
         const angle = Math.random() * Math.PI * 2;
